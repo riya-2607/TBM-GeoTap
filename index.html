@@ -473,7 +473,7 @@ function showApp() {
   checkRewardBanner();
   updateCD();
   setInterval(updateCD, 1000);
-  startLoc();
+  window.startLoc();
 }
 
 // ─── Haversine ────────────────────────────────────────────
@@ -520,13 +520,22 @@ function refreshBtn() {
 }
 
 // ─── Location ─────────────────────────────────────────────
-function startLoc() {
-  if (!navigator.geolocation) { onErr(); return; }
+// ─── Location ─────────────────────────────────────────────
+window.startLoc = function() {
+  if (!navigator.geolocation) {
+    onErr();
+    return;
+  }
+  // Reset UI to "locating" state before trying again
+  document.getElementById('locDot').className   = 'loc-dot';
   document.getElementById('locText').textContent = 'Locating…';
-  navigator.geolocation.getCurrentPosition(onPos, onErr, {enableHighAccuracy:true,timeout:10000});
+  document.getElementById('fenceBanner').className = 'fence-banner checking';
+  document.getElementById('fenceIcon').textContent  = '⏳';
+  document.getElementById('fenceTitle').textContent = 'Checking your location…';
+  document.getElementById('fenceSub').textContent   = 'Verifying you\'re inside the store';
+  navigator.geolocation.getCurrentPosition(onPos, onErr, {enableHighAccuracy:true, timeout:10000});
   navigator.geolocation.watchPosition(onPos, onErr, {enableHighAccuracy:true});
 }
-window.startLoc = startLoc;
 
 function onPos(pos) {
   locOk   = true;
