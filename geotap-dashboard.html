@@ -506,22 +506,29 @@ window.loadData = async () => {
   allCustomers = snap.docs
     .map(d => {
       const data = d.data();
+      const firstName = data.firstName || '';
+      const lastName  = data.lastName  || '';
+      const fullName  = data.displayName || (firstName && lastName ? firstName+' '+lastName : firstName || lastName || '(no name)');
       return {
-        uid:            d.id,
-        displayName:    data.displayName || data.name || '(no name)',
-        email:          data.email       || '(no email)',
-        photoURL:       data.photoURL    || null,
-        balance:        data.balance     || 0,
-        taps:           data.taps        || 0,
-        visits:         data.visits      || 0,
-        lastTap:        data.lastTap     || 0,
-        rewardShown:    data.rewardShown    || false,
-        rewardRedeemed: data.rewardRedeemed || false,
-        history:        data.history     || [],
-        weekTaps:       data.weekTaps    || []
+        uid:             d.id,
+        displayName:     fullName,
+        firstName,
+        lastName,
+        email:           data.email   || '(no email)',
+        phone:           data.phone   || '—',
+        dob:             data.dob     || '—',
+        photoURL:        data.photoURL || null,
+        balance:         data.balance  || 0,
+        taps:            data.taps     || 0,
+        visits:          data.visits   || 0,
+        lastTap:         data.lastTap  || 0,
+        rewardShown:     data.rewardShown    || false,
+        rewardRedeemed:  data.rewardRedeemed || false,
+        profileComplete: data.profileComplete || false,
+        history:         data.history  || [],
+        weekTaps:        data.weekTaps || []
       };
     })
-    // Exclude the owner's own account from the customer list
     .filter(c => c.email.toLowerCase() !== OWNER_EMAIL.toLowerCase());
   renderAll();
 };
@@ -660,8 +667,13 @@ function renderTable(containerId, customers){
       :status==='redeemed'
       ?`<button class="action-btn done" disabled>Redeemed ✓</button>`
       :`<span style="font-size:11px;color:var(--muted);">No reward yet</span>`;
+    const profileBadge = !c.profileComplete
+      ? `<span style="font-size:9px;background:rgba(245,166,35,0.1);color:var(--amber);border:1px solid rgba(245,166,35,0.25);border-radius:4px;padding:2px 6px;margin-left:6px;vertical-align:middle;">Profile incomplete</span>`
+      : '';
+    const phoneStr = c.phone !== '—' ? c.phone : '<span style="color:var(--muted)">—</span>';
+    const dobStr   = c.dob   !== '—' ? new Date(c.dob).toLocaleDateString([],{year:'numeric',month:'short',day:'numeric'}) : '<span style="color:var(--muted)">—</span>';
     return `<div class="table-row">
-      <div class="td customer-cell"><div class="cust-avatar">${avatarHtml}</div><div><div class="cust-name">${c.displayName||'Unknown'}</div><div class="cust-email">${c.email||''}</div></div></div>
+      <div class="td customer-cell"><div class="cust-avatar">${avatarHtml}</div><div><div class="cust-name">${c.displayName||'Unknown'}${profileBadge}</div><div class="cust-email">${c.email||''}</div><div class="cust-email" style="margin-top:2px;">📞 ${phoneStr} &nbsp;·&nbsp; 🎂 ${dobStr}</div></div></div>
       <div class="td"><span class="bal-cell ${c.balance>=10?'at-goal':''}">$${(c.balance||0).toFixed(2)}</span></div>
       <div class="td hide-mobile">${c.taps||0}</div>
       <div class="td hide-mobile">${c.visits||0}</div>

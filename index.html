@@ -55,7 +55,40 @@ body { font-family:'Space Grotesk',sans-serif; background:var(--bg); color:var(-
 .google-btn svg { flex-shrink:0; }
 .login-terms { font-size:11px; color:var(--muted); text-align:center; margin-top:20px; line-height:1.5; }
 
-/* ── Main app header ── */
+/* ── Profile completion screen ── */
+#screenProfile { justify-content:flex-start; align-items:center; min-height:100vh; padding:32px 24px; }
+.profile-card { width:100%; max-width:400px; background:var(--surface); border:1px solid var(--border); border-radius:24px; padding:32px 28px; display:flex; flex-direction:column; gap:0; margin-top:16px; }
+.profile-logo { font-family:'Syne',sans-serif; font-size:22px; font-weight:800; color:var(--accent); margin-bottom:4px; }
+.profile-store { font-size:11px; color:var(--muted); letter-spacing:0.5px; margin-bottom:20px; }
+.profile-title { font-family:'Syne',sans-serif; font-size:20px; font-weight:800; margin-bottom:6px; }
+.profile-sub { font-size:13px; color:var(--muted); line-height:1.6; margin-bottom:24px; }
+.field-row { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+.field-group { display:flex; flex-direction:column; gap:6px; margin-bottom:14px; }
+.field-group.full { grid-column:1/-1; }
+.field-label { font-size:11px; font-weight:600; color:var(--muted); text-transform:uppercase; letter-spacing:0.5px; }
+.field-input { background:var(--surface2); border:1px solid var(--border); border-radius:10px; padding:11px 14px; font-size:14px; color:var(--text); font-family:'Space Grotesk',sans-serif; outline:none; width:100%; transition:border-color 0.2s; }
+.field-input:focus { border-color:rgba(0,229,160,0.5); }
+.field-input::placeholder { color:var(--muted); }
+.field-input.error { border-color:var(--danger); }
+.field-error { font-size:11px; color:var(--danger); display:none; margin-top:2px; }
+.field-error.show { display:block; }
+.disclaimer-box { background:rgba(91,156,246,0.06); border:1px solid rgba(91,156,246,0.2); border-radius:12px; padding:14px; margin-bottom:20px; }
+.disclaimer-title { font-size:12px; font-weight:700; color:rgba(91,156,246,0.9); margin-bottom:8px; text-transform:uppercase; letter-spacing:0.5px; }
+.disclaimer-text { font-size:12px; color:var(--muted); line-height:1.6; }
+.disclaimer-text strong { color:var(--text); }
+.consent-row { display:flex; align-items:flex-start; gap:10px; margin-bottom:20px; cursor:pointer; }
+.consent-check { width:18px; height:18px; border:2px solid var(--border); border-radius:5px; background:var(--surface2); flex-shrink:0; margin-top:1px; display:flex; align-items:center; justify-content:center; transition:all 0.2s; cursor:pointer; }
+.consent-check.checked { background:var(--accent); border-color:var(--accent); }
+.consent-check.checked::after { content:'✓'; font-size:11px; color:#001a0e; font-weight:700; }
+.consent-check.error-check { border-color:var(--danger); }
+.consent-label { font-size:12px; color:var(--muted); line-height:1.6; }
+.consent-label a { color:var(--accent); text-decoration:none; }
+.submit-btn { width:100%; background:var(--accent); color:#001a0e; border:none; border-radius:12px; padding:14px; font-size:15px; font-weight:700; cursor:pointer; font-family:'Space Grotesk',sans-serif; transition:opacity 0.2s, transform 0.1s; }
+.submit-btn:hover { opacity:0.9; }
+.submit-btn:active { transform:scale(0.98); }
+.submit-btn:disabled { opacity:0.5; cursor:not-allowed; }
+.profile-prefill { font-size:12px; color:var(--muted); text-align:center; margin-bottom:16px; }
+.profile-prefill span { color:var(--accent); font-weight:600; }
 .app-header { width:100%; max-width:480px; display:flex; justify-content:space-between; align-items:center; padding:20px 20px 0; }
 .header-left { display:flex; align-items:center; gap:10px; }
 .avatar { width:36px; height:36px; border-radius:50%; border:2px solid var(--accent); object-fit:cover; }
@@ -212,6 +245,70 @@ body { font-family:'Space Grotesk',sans-serif; background:var(--bg); color:var(-
       Continue with Google
     </button>
     <div class="login-terms">By signing in you agree to receive reward notifications from this store. Your email is used only to track your balance.</div>
+  </div>
+</div>
+
+<!-- ── Profile Completion ── -->
+<div id="screenProfile" class="screen">
+  <div class="profile-card">
+    <div class="profile-logo">GeoTap</div>
+    <div class="profile-store">2422 St Clair Ave W · Toronto</div>
+    <div class="profile-title">Complete your profile</div>
+    <div class="profile-sub">Just a few details to set up your rewards account. Only takes 30 seconds.</div>
+
+    <div id="profilePrefill" class="profile-prefill" style="display:none;">
+      Signed in as <span id="prefillEmail"></span>
+    </div>
+
+    <div class="field-row">
+      <div class="field-group">
+        <div class="field-label">First name</div>
+        <input class="field-input" id="fieldFirstName" type="text" placeholder="e.g. Sarah" autocomplete="given-name">
+        <div class="field-error" id="errFirstName">Required</div>
+      </div>
+      <div class="field-group">
+        <div class="field-label">Last name</div>
+        <input class="field-input" id="fieldLastName" type="text" placeholder="e.g. Smith" autocomplete="family-name">
+        <div class="field-error" id="errLastName">Required</div>
+      </div>
+    </div>
+
+    <div class="field-group">
+      <div class="field-label">Email address</div>
+      <input class="field-input" id="fieldEmail" type="email" placeholder="your@email.com" autocomplete="email">
+      <div class="field-error" id="errEmail">Enter a valid email</div>
+    </div>
+
+    <div class="field-group">
+      <div class="field-label">Phone number</div>
+      <input class="field-input" id="fieldPhone" type="tel" placeholder="+1 (416) 555-0123" autocomplete="tel">
+      <div class="field-error" id="errPhone">Enter a valid phone number</div>
+    </div>
+
+    <div class="field-group">
+      <div class="field-label">Date of birth</div>
+      <input class="field-input" id="fieldDOB" type="date" autocomplete="bday">
+      <div class="field-error" id="errDOB">Required — must be 16 or older</div>
+    </div>
+
+    <div class="disclaimer-box">
+      <div class="disclaimer-title">📋 Data collection notice</div>
+      <div class="disclaimer-text">
+        <strong>2422 St Clair Ave W (TBM GeoTap)</strong> collects your name, email, phone number, and date of birth to operate this rewards programme. Your data is stored securely and used only to:<br><br>
+        • Track your reward balance and tap history<br>
+        • Notify you when you reach the $10 reward threshold<br>
+        • Verify your identity when redeeming rewards in-store<br><br>
+        Your data will never be sold to third parties. You may request deletion at any time by contacting the store.
+      </div>
+    </div>
+
+    <div class="consent-row" onclick="toggleConsent()">
+      <div class="consent-check" id="consentCheck"></div>
+      <div class="consent-label">I have read and agree to the data collection notice above. I consent to my personal information being stored and used for this rewards programme.</div>
+    </div>
+    <div class="field-error" id="errConsent" style="margin-top:-14px;margin-bottom:14px;">You must agree to continue</div>
+
+    <button class="submit-btn" id="profileSubmitBtn" onclick="submitProfile()">Create my rewards account</button>
   </div>
 </div>
 
@@ -420,27 +517,36 @@ async function loadUserData() {
   const ref  = doc(db, 'users', currentUser.uid);
   const snap = await getDoc(ref);
 
-  // Always write latest profile info from Google Auth so dashboard can see names
-  const profile = {
-    displayName: currentUser.displayName || '',
-    email:       currentUser.email       || '',
-    photoURL:    currentUser.photoURL    || '',
-    updatedAt:   serverTimestamp()
-  };
-
   if (snap.exists()) {
     userData = snap.data();
-    // Update profile fields in case they changed
+    // Always refresh Google profile fields
+    const profile = {
+      displayName: currentUser.displayName || userData.displayName || '',
+      email:       currentUser.email       || userData.email       || '',
+      photoURL:    currentUser.photoURL    || userData.photoURL    || '',
+      updatedAt:   serverTimestamp()
+    };
     await updateDoc(ref, profile);
     Object.assign(userData, profile);
+
+    // If profile not yet completed, show profile screen
+    if (!userData.profileComplete) {
+      showProfile();
+    } else {
+      showApp();
+    }
   } else {
-    // Brand new user — create full record
+    // Brand new user — show profile form
     userData = {
       balance: 0, taps: 0, visits: 0, lastTap: 0,
       rewardShown: false, rewardRedeemed: false, history: [],
-      ...profile
+      profileComplete: false,
+      displayName: currentUser.displayName || '',
+      email:       currentUser.email       || '',
+      photoURL:    currentUser.photoURL    || ''
     };
     await setDoc(ref, userData);
+    showProfile();
   }
 }
 
@@ -464,15 +570,135 @@ function setLoadingMsg(msg) {
 function showLogin() {
   document.getElementById('screenLoading').classList.remove('active');
   document.getElementById('screenLogin').classList.add('active');
+  document.getElementById('screenProfile').classList.remove('active');
+  document.getElementById('screenApp').classList.remove('active');
 }
-function showApp() {
+function showProfile() {
   document.getElementById('screenLoading').classList.remove('active');
   document.getElementById('screenLogin').classList.remove('active');
+  document.getElementById('screenProfile').classList.add('active');
+  document.getElementById('screenApp').classList.remove('active');
+
+  // Pre-fill email from Google
+  const email = currentUser.email || '';
+  if (email) {
+    document.getElementById('fieldEmail').value = email;
+    document.getElementById('profilePrefill').style.display = 'block';
+    document.getElementById('prefillEmail').textContent = email;
+  }
+  // Pre-fill name from Google if available
+  const name = currentUser.displayName || '';
+  if (name) {
+    const parts = name.split(' ');
+    document.getElementById('fieldFirstName').value = parts[0] || '';
+    document.getElementById('fieldLastName').value  = parts.slice(1).join(' ') || '';
+  }
+}
+
+let consentGiven = false;
+window.toggleConsent = () => {
+  consentGiven = !consentGiven;
+  const el = document.getElementById('consentCheck');
+  el.classList.toggle('checked', consentGiven);
+  el.classList.remove('error-check');
+  document.getElementById('errConsent').classList.remove('show');
+};
+
+window.submitProfile = async () => {
+  // Validate all fields
+  let valid = true;
+
+  const firstName = document.getElementById('fieldFirstName').value.trim();
+  const lastName  = document.getElementById('fieldLastName').value.trim();
+  const email     = document.getElementById('fieldEmail').value.trim();
+  const phone     = document.getElementById('fieldPhone').value.trim();
+  const dob       = document.getElementById('fieldDOB').value;
+
+  const showErr = (id, fieldId) => {
+    document.getElementById(id).classList.add('show');
+    document.getElementById(fieldId).classList.add('error');
+    valid = false;
+  };
+  const clearErr = (id, fieldId) => {
+    document.getElementById(id).classList.remove('show');
+    document.getElementById(fieldId).classList.remove('error');
+  };
+
+  // First name
+  if (!firstName) showErr('errFirstName', 'fieldFirstName');
+  else clearErr('errFirstName', 'fieldFirstName');
+
+  // Last name
+  if (!lastName) showErr('errLastName', 'fieldLastName');
+  else clearErr('errLastName', 'fieldLastName');
+
+  // Email
+  const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  if (!emailOk) showErr('errEmail', 'fieldEmail');
+  else clearErr('errEmail', 'fieldEmail');
+
+  // Phone — at least 7 digits
+  const phoneOk = /[\d\s\-\+\(\)]{7,}/.test(phone);
+  if (!phoneOk) showErr('errPhone', 'fieldPhone');
+  else clearErr('errPhone', 'fieldPhone');
+
+  // DOB — must be at least 16
+  let dobOk = false;
+  if (dob) {
+    const age = (Date.now() - new Date(dob).getTime()) / (1000*60*60*24*365.25);
+    dobOk = age >= 16;
+  }
+  if (!dobOk) showErr('errDOB', 'fieldDOB');
+  else clearErr('errDOB', 'fieldDOB');
+
+  // Consent
+  if (!consentGiven) {
+    document.getElementById('errConsent').classList.add('show');
+    document.getElementById('consentCheck').classList.add('error-check');
+    valid = false;
+  }
+
+  if (!valid) return;
+
+  // Save to Firestore
+  const btn = document.getElementById('profileSubmitBtn');
+  btn.disabled = true;
+  btn.textContent = 'Saving…';
+
+  try {
+    const fullName = firstName + ' ' + lastName;
+    const profileData = {
+      firstName, lastName,
+      displayName:     fullName,
+      email,
+      phone,
+      dob,
+      photoURL:        currentUser.photoURL || '',
+      profileComplete: true,
+      consentGiven:    true,
+      consentDate:     new Date().toISOString(),
+      updatedAt:       serverTimestamp()
+    };
+    const ref = doc(db, 'users', currentUser.uid);
+    await updateDoc(ref, profileData);
+    Object.assign(userData, profileData);
+    showApp();
+  } catch(e) {
+    btn.disabled = false;
+    btn.textContent = 'Create my rewards account';
+    const notice = document.getElementById('configNotice');
+    notice.style.display = 'block';
+    notice.innerHTML = '<strong>Save failed:</strong> ' + e.message;
+  }
+};
+  document.getElementById('screenLoading').classList.remove('active');
+  document.getElementById('screenLogin').classList.remove('active');
+  document.getElementById('screenProfile').classList.remove('active');
   document.getElementById('screenApp').classList.add('active');
 
-  // Populate user info
-  const name  = currentUser.displayName || 'Valued Customer';
-  const email = currentUser.email || '';
+  // Use saved profile name if available, fall back to Google display name
+  const name  = userData.displayName || currentUser.displayName || 'Valued Customer';
+  const email = userData.email       || currentUser.email || '';
   const photo = currentUser.photoURL;
   document.getElementById('userName').textContent  = name.split(' ')[0];
   document.getElementById('userEmail').textContent = email;
