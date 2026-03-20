@@ -21,7 +21,7 @@
     messagingSenderId: "684077488167",
     appId:             "1:684077488167:web:97185e3372bb46cbb15602"
   };
-  const OWNER_EMAIL = "xavier26.riya@gmail.com"; // ← replace with your Gmail
+  const OWNER_EMAIL = "YOUR_GMAIL@gmail.com"; // ← replace with your Gmail
 </script>
 
 <style>
@@ -230,7 +230,8 @@ body{font-family:'Space Grotesk',sans-serif;background:var(--bg);color:var(--tex
 <!-- Loading -->
 <div id="screenLoading">
   <div class="spinner"></div>
-  <div class="loading-text">Loading dashboard…</div>
+  <div class="loading-text" id="loadingText">Loading dashboard…</div>
+  <button id="loadingEscape" onclick="forceLogin()" style="display:none;margin-top:4px;background:none;border:1px solid rgba(255,255,255,0.15);border-radius:8px;padding:7px 16px;font-size:12px;color:#6b7280;cursor:pointer;font-family:'Space Grotesk',sans-serif;">Taking too long? Go to sign-in</button>
 </div>
 
 <!-- Login -->
@@ -459,20 +460,39 @@ if (DEMO) {
   auth = getAuth(app);
   db   = getFirestore(app);
 
-  const safetyTimer = setTimeout(() => showLogin(), 10000);
+  setLoadMsg('Checking sign-in…');
+
+  // Show escape button after 5s
+  const escapeTimer = setTimeout(() => {
+    const btn = document.getElementById('loadingEscape');
+    if (btn) btn.style.display = 'block';
+  }, 5000);
+
+  // Hard fallback after 12s
+  const safetyTimer = setTimeout(() => {
+    clearTimeout(escapeTimer);
+    showLogin();
+  }, 12000);
 
   onAuthStateChanged(auth, async user => {
     clearTimeout(safetyTimer);
+    clearTimeout(escapeTimer);
     if (user) {
       if (user.email.toLowerCase() !== OWNER_EMAIL.toLowerCase()) {
         await fbSignOut(auth);
         showLogin();
-        showError('Access denied. Signed in as ' + user.email + ' but OWNER_EMAIL is set to ' + OWNER_EMAIL + '. Update OWNER_EMAIL in the file.');
+        showError('Access denied. Signed in as ' + user.email + ' but OWNER_EMAIL is set to: ' + OWNER_EMAIL);
         return;
       }
       currentOwner = user;
-      await loadData();
-      showDash();
+      setLoadMsg('Loading customer data…');
+      try {
+        await loadData();
+        showDash();
+      } catch(e) {
+        showLogin();
+        showError('Failed to load data: ' + e.message + '. Check Firestore rules allow read access.');
+      }
     } else {
       showLogin();
     }
@@ -518,17 +538,26 @@ window.ownerSignOut = async () => {
 };
 
 // ── Screens ───────────────────────────────────────────────
-function showLogin(){ document.getElementById('screenLoading').style.display='none'; document.getElementById('screenLogin').style.display='flex'; }
-function showDash(){
-  document.getElementById('screenLoading').style.display='none';
-  document.getElementById('screenLogin').style.display='none';
-  document.getElementById('screenDash').style.display='block';
-  if(currentOwner){
-    const n=currentOwner.displayName||'Owner';
-    document.getElementById('ownerName').textContent=n.split(' ')[0];
-    const av=document.getElementById('ownerAvatar');
-    if(currentOwner.photoURL){ av.innerHTML=`<img src="${currentOwner.photoURL}" alt="">`; }
-    else { av.textContent=n.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase(); }
+function setLoadMsg(msg) {
+  const el = document.getElementById('loadingText');
+  if (el) el.textContent = msg;
+}
+function showLogin() {
+  document.getElementById('screenLoading').style.display = 'none';
+  document.getElementById('screenLogin').style.display   = 'flex';
+  document.getElementById('screenDash').style.display    = 'none';
+}
+window.forceLogin = () => showLogin();
+function showDash() {
+  document.getElementById('screenLoading').style.display = 'none';
+  document.getElementById('screenLogin').style.display   = 'none';
+  document.getElementById('screenDash').style.display    = 'block';
+  if (currentOwner) {
+    const n = currentOwner.displayName || 'Owner';
+    document.getElementById('ownerName').textContent = n.split(' ')[0];
+    const av = document.getElementById('ownerAvatar');
+    if (currentOwner.photoURL) { av.innerHTML = `<img src="${currentOwner.photoURL}" alt="">`; }
+    else { av.textContent = n.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase(); }
   }
   renderAll();
 }
