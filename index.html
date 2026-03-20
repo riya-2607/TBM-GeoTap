@@ -224,7 +224,7 @@ body { font-family:'Space Grotesk',sans-serif; background:var(--bg); color:var(-
 <body>
 
 <!-- ── Loading ── -->
-<div id="screenLoading" class="screen active" style="min-height:100vh;justify-content:center;flex-direction:column;gap:16px;">
+<div id="screenLoading" class="screen active" style="min-height:100vh;justify-content:center;flex-direction:column;gap:16px;display:flex;">
   <div class="spinner"></div>
   <div id="loadingMsg" style="font-size:13px;color:var(--muted);text-align:center;max-width:280px;line-height:1.6;">Connecting…</div>
 </div>
@@ -567,26 +567,30 @@ function setLoadingMsg(msg) {
   const el = document.getElementById('loadingMsg');
   if (el) el.textContent = msg;
 }
+function hideAllScreens() {
+  ['screenLoading','screenLogin','screenProfile','screenApp'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) { el.classList.remove('active'); el.style.display = 'none'; }
+  });
+}
 function showLogin() {
-  document.getElementById('screenLoading').classList.remove('active');
-  document.getElementById('screenLogin').classList.add('active');
-  document.getElementById('screenProfile').classList.remove('active');
-  document.getElementById('screenApp').classList.remove('active');
+  hideAllScreens();
+  const el = document.getElementById('screenLogin');
+  el.style.display = 'flex';
+  el.classList.add('active');
 }
 function showProfile() {
-  document.getElementById('screenLoading').classList.remove('active');
-  document.getElementById('screenLogin').classList.remove('active');
-  document.getElementById('screenProfile').classList.add('active');
-  document.getElementById('screenApp').classList.remove('active');
+  hideAllScreens();
+  const el = document.getElementById('screenProfile');
+  el.style.display = 'flex';
+  el.classList.add('active');
 
-  // Pre-fill email from Google
   const email = currentUser.email || '';
   if (email) {
     document.getElementById('fieldEmail').value = email;
     document.getElementById('profilePrefill').style.display = 'block';
     document.getElementById('prefillEmail').textContent = email;
   }
-  // Pre-fill name from Google if available
   const name = currentUser.displayName || '';
   if (name) {
     const parts = name.split(' ');
@@ -691,10 +695,12 @@ window.submitProfile = async () => {
     notice.innerHTML = '<strong>Save failed:</strong> ' + e.message;
   }
 };
-  document.getElementById('screenLoading').classList.remove('active');
-  document.getElementById('screenLogin').classList.remove('active');
-  document.getElementById('screenProfile').classList.remove('active');
-  document.getElementById('screenApp').classList.add('active');
+
+function showApp() {
+  hideAllScreens();
+  const el = document.getElementById('screenApp');
+  el.style.display = 'flex';
+  el.classList.add('active');
 
   // Use saved profile name if available, fall back to Google display name
   const name  = userData.displayName || currentUser.displayName || 'Valued Customer';
