@@ -477,8 +477,13 @@ onAuthStateChanged(auth, async user => {
   if (user) {
     setLoadingMsg('Loading your account…');
     currentUser = user;
-    await loadUserData();
-    showApp();
+    try {
+      await loadUserData();
+      // NOTE: showApp() or showProfile() is called inside loadUserData — do NOT call showApp() here
+    } catch(e) {
+      console.error('loadUserData failed:', e);
+      showLogin();
+    }
   } else {
     showLogin();
   }
@@ -519,24 +524,26 @@ async function loadUserData() {
 
   if (snap.exists()) {
     userData = snap.data();
-    // Always refresh Google profile fields
-    const profile = {
+
+    // Refresh Google Auth profile fields
+    await updateDoc(ref, {
       displayName: currentUser.displayName || userData.displayName || '',
       email:       currentUser.email       || userData.email       || '',
       photoURL:    currentUser.photoURL    || userData.photoURL    || '',
       updatedAt:   serverTimestamp()
-    };
-    await updateDoc(ref, profile);
-    Object.assign(userData, profile);
+    });
+    userData.displayName = currentUser.displayName || userData.displayName || '';
+    userData.email       = currentUser.email       || userData.email       || '';
 
-    // If profile not yet completed, show profile screen
-    if (!userData.profileComplete) {
-      showProfile();
-    } else {
+    // Route based on whether profile form has been completed
+    if (userData.profileComplete === true) {
       showApp();
+    } else {
+      showProfile();
     }
+
   } else {
-    // Brand new user — show profile form
+    // Brand new user — create skeleton doc, show profile form
     userData = {
       balance: 0, taps: 0, visits: 0, lastTap: 0,
       rewardShown: false, rewardRedeemed: false, history: [],
