@@ -193,8 +193,10 @@ body { font-family:'Space Grotesk',sans-serif; background:var(--bg); color:var(-
 <body>
 
 <!-- ── Loading ── -->
-<div id="screenLoading" class="screen active" style="min-height:100vh;justify-content:center;">
+<div id="screenLoading" class="screen active" style="min-height:100vh;justify-content:center;flex-direction:column;gap:16px;">
   <div class="spinner"></div>
+  <div id="loadingMsg" style="font-size:13px;color:var(--muted);text-align:center;max-width:280px;line-height:1.6;">Connecting to Firebase…</div>
+  <button id="loadingSkipBtn" onclick="forceShowLogin()" style="display:none;margin-top:8px;background:none;border:1px solid var(--border);border-radius:8px;padding:8px 16px;font-size:12px;color:var(--muted);cursor:pointer;font-family:'Space Grotesk',sans-serif;">Stuck? Tap here to reload</button>
 </div>
 
 <!-- ── Login ── -->
@@ -382,18 +384,30 @@ if (DEMO) {
     db   = getFirestore(app);
     firebaseReady = true;
 
-    const safetyTimer = setTimeout(() => { showLogin(); }, 8000);
+    setLoadingMsg('Checking sign-in status…');
 
-    onAuthStateChanged(auth, async user => {
-      clearTimeout(safetyTimer);
-      if (user) {
-        currentUser = user;
-        await loadUserData();
-        showApp();
-      } else {
-        showLogin();
-      }
-    });
+const skipTimer = setTimeout(() => {
+  const btn = document.getElementById('loadingSkipBtn');
+  if (btn) btn.style.display = 'block';
+}, 4000);
+
+const safetyTimer = setTimeout(() => {
+  clearTimeout(skipTimer);
+  showLogin();
+}, 10000);
+
+onAuthStateChanged(auth, async user => {
+  clearTimeout(safetyTimer);
+  clearTimeout(skipTimer);
+  if (user) {
+    setLoadingMsg('Loading your account…');
+    currentUser = user;
+    await loadUserData();
+    showApp();
+  } else {
+    showLogin();
+  }
+});
   } catch(e) {
     console.error('Firebase init failed:', e);
     showLogin();
@@ -456,6 +470,11 @@ async function saveUserData(patch) {
 }
 
 // ─── Show screens ─────────────────────────────────────────
+function setLoadingMsg(msg) {
+  const el = document.getElementById('loadingMsg');
+  if (el) el.textContent = msg;
+}
+window.forceShowLogin = () => { showLogin(); };
 function showLogin() {
   document.getElementById('screenLoading').classList.remove('active');
   document.getElementById('screenLogin').classList.add('active');
