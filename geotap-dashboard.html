@@ -14,16 +14,14 @@
 ═══════════════════════════════════════════════ -->
 <script>
   const FIREBASE_CONFIG = {
-    const FIREBASE_CONFIG = {
-    apiKey: "AIzaSyCwJabKAoKqAIDYqJ8JQ4cuwQKXOf9PJ64",
-    authDomain: "riya-2607.github.io",
-    projectId: "tbm-geotap",
-    storageBucket: "tbm-geotap.firebasestorage.app",
+    apiKey:            "AIzaSyCwJabKAoKqAIDYqJ8JQ4cuwQKXOf9PJ64",
+    authDomain:        "tbm-geotap.firebaseapp.com",
+    projectId:         "tbm-geotap",
+    storageBucket:     "tbm-geotap.firebasestorage.app",
     messagingSenderId: "684077488167",
-    appId: "1:684077488167:web:97185e3372bb46cbb15602",
-    measurementId: "G-S5RRW60FGL"
+    appId:             "1:684077488167:web:97185e3372bb46cbb15602"
   };
-  const OWNER_EMAIL = "YOUR_GMAIL@gmail.com"; // only this email can log in
+  const OWNER_EMAIL = "YOUR_GMAIL@gmail.com"; // ← replace with your Gmail
 </script>
 
 <style>
@@ -457,33 +455,28 @@ if (DEMO) {
   allCustomers = genDemoData();
   showDash();
 } else {
-  try {
-    const app = initializeApp(FIREBASE_CONFIG);
-    auth = getAuth(app);
-    db   = getFirestore(app);
+  const app = initializeApp(FIREBASE_CONFIG);
+  auth = getAuth(app);
+  db   = getFirestore(app);
 
-    const safetyTimer = setTimeout(() => { showLogin(); }, 8000);
+  const safetyTimer = setTimeout(() => showLogin(), 10000);
 
-    onAuthStateChanged(auth, async user => {
-      clearTimeout(safetyTimer);
-      if (user) {
-        if (user.email.toLowerCase() !== OWNER_EMAIL.toLowerCase()) {
-          await fbSignOut(auth);
-          showLogin();
-          showError('Access denied. Signed in as ' + user.email + ' but OWNER_EMAIL is set to ' + OWNER_EMAIL);
-          return;
-        }
-        currentOwner = user;
-        await loadData();
-        showDash();
-      } else {
+  onAuthStateChanged(auth, async user => {
+    clearTimeout(safetyTimer);
+    if (user) {
+      if (user.email.toLowerCase() !== OWNER_EMAIL.toLowerCase()) {
+        await fbSignOut(auth);
         showLogin();
+        showError('Access denied. Signed in as ' + user.email + ' but OWNER_EMAIL is set to ' + OWNER_EMAIL + '. Update OWNER_EMAIL in the file.');
+        return;
       }
-    });
-  } catch(e) {
-    showLogin();
-    showError('Firebase config error: ' + e.message);
-  }
+      currentOwner = user;
+      await loadData();
+      showDash();
+    } else {
+      showLogin();
+    }
+  });
 }
 
 // ── Load Firestore data ────────────────────────────────────

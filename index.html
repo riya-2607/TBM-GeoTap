@@ -14,14 +14,12 @@
 ═══════════════════════════════════════════════════════ -->
 <script>
   const FIREBASE_CONFIG = {
-    const FIREBASE_CONFIG = {
-    apiKey: "AIzaSyCwJabKAoKqAIDYqJ8JQ4cuwQKXOf9PJ64",
-    authDomain: "riya-2607.github.io",
-    projectId: "tbm-geotap",
-    storageBucket: "tbm-geotap.firebasestorage.app",
+    apiKey:            "AIzaSyCwJabKAoKqAIDYqJ8JQ4cuwQKXOf9PJ64",
+    authDomain:        "tbm-geotap.firebaseapp.com",
+    projectId:         "tbm-geotap",
+    storageBucket:     "tbm-geotap.firebasestorage.app",
     messagingSenderId: "684077488167",
-    appId: "1:684077488167:web:97185e3372bb46cbb15602",
-    measurementId: "G-S5RRW60FGL"
+    appId:             "1:684077488167:web:97185e3372bb46cbb15602"
   };
 </script>
 
@@ -195,8 +193,7 @@ body { font-family:'Space Grotesk',sans-serif; background:var(--bg); color:var(-
 <!-- ── Loading ── -->
 <div id="screenLoading" class="screen active" style="min-height:100vh;justify-content:center;flex-direction:column;gap:16px;">
   <div class="spinner"></div>
-  <div id="loadingMsg" style="font-size:13px;color:var(--muted);text-align:center;max-width:280px;line-height:1.6;">Connecting to Firebase…</div>
-  <button id="loadingSkipBtn" onclick="forceShowLogin()" style="display:none;margin-top:8px;background:none;border:1px solid var(--border);border-radius:8px;padding:8px 16px;font-size:12px;color:var(--muted);cursor:pointer;font-family:'Space Grotesk',sans-serif;">Stuck? Tap here to reload</button>
+  <div id="loadingMsg" style="font-size:13px;color:var(--muted);text-align:center;max-width:280px;line-height:1.6;">Connecting…</div>
 </div>
 
 <!-- ── Login ── -->
@@ -366,39 +363,20 @@ let auth, db, currentUser = null, userData = null;
 let userLat = null, userLng = null, inside = false, locOk = false;
 let firebaseReady = false;
 
-// ─── Demo mode (no Firebase config) ──────────────────────
+// ─── Demo mode ───────────────────────────────────────────
 const DEMO = (FIREBASE_CONFIG.apiKey === 'YOUR_API_KEY');
 
-if (DEMO) {
-  document.getElementById('configNotice').style.display = 'block';
-  userData = JSON.parse(localStorage.getItem('gt_demo_user') || 'null') || {
-    balance: 0, taps: 0, visits: 0, lastTap: 0,
-    rewardShown: false, rewardRedeemed: false, history: []
-  };
-  currentUser = { displayName: 'Demo User', email: 'demo@example.com', photoURL: null };
-  showApp();
-} else {
-  try {
-    const app = initializeApp(FIREBASE_CONFIG);
-    auth = getAuth(app);
-    db   = getFirestore(app);
-    firebaseReady = true;
+// ─── Init ────────────────────────────────────────────────
+const app = initializeApp(FIREBASE_CONFIG);
+auth = getAuth(app);
+db   = getFirestore(app);
+firebaseReady = true;
 
-    setLoadingMsg('Checking sign-in status…');
-
-const skipTimer = setTimeout(() => {
-  const btn = document.getElementById('loadingSkipBtn');
-  if (btn) btn.style.display = 'block';
-}, 4000);
-
-const safetyTimer = setTimeout(() => {
-  clearTimeout(skipTimer);
-  showLogin();
-}, 10000);
+// Safety fallback — go to login after 10s if Firebase never responds
+const safetyTimer = setTimeout(() => showLogin(), 10000);
 
 onAuthStateChanged(auth, async user => {
   clearTimeout(safetyTimer);
-  clearTimeout(skipTimer);
   if (user) {
     setLoadingMsg('Loading your account…');
     currentUser = user;
@@ -408,15 +386,9 @@ onAuthStateChanged(auth, async user => {
     showLogin();
   }
 });
-  } catch(e) {
-    console.error('Firebase init failed:', e);
-    showLogin();
-  }
-}
 
 // ─── Auth ─────────────────────────────────────────────────
 window.signInWithGoogle = async () => {
-  if (DEMO) { showApp(); return; }
   const btn = document.getElementById('googleSignInBtn');
   btn.disabled = true;
   btn.textContent = 'Opening Google sign-in…';
@@ -424,25 +396,23 @@ window.signInWithGoogle = async () => {
     const provider = new GoogleAuthProvider();
     provider.setCustomParameters({ prompt: 'select_account' });
     await signInWithPopup(auth, provider);
-    // onAuthStateChanged handles the rest
+    // onAuthStateChanged fires automatically after success
   } catch(e) {
     btn.disabled = false;
     btn.innerHTML = `<svg width="20" height="20" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>Continue with Google`;
     const notice = document.getElementById('configNotice');
     notice.style.display = 'block';
     if (e.code === 'auth/popup-blocked') {
-      notice.innerHTML = '<strong>Pop-up blocked</strong> — Please allow pop-ups for this site in your browser settings and try again.';
-    } else if (e.code === 'auth/unauthorized-domain') {
-      notice.innerHTML = '<strong>Domain not authorized</strong> — Go to Firebase → Authentication → Authorized Domains and add <code>riya-2607.github.io</code>';
+      notice.innerHTML = '<strong>Pop-up blocked</strong> — tap the address bar, allow pop-ups for this site, then try again.';
     } else {
-      notice.innerHTML = '<strong>Sign-in error:</strong> ' + (e.code || '') + ' — ' + e.message;
+      notice.innerHTML = '<strong>Error ' + (e.code||'') + ':</strong> ' + e.message;
     }
   }
 };
 
 window.signOut = async () => {
-  if (DEMO) { location.reload(); return; }
-  if (firebaseReady) await fbSignOut(auth);
+  await fbSignOut(auth);
+  location.reload();
 };
 
 // ─── Firestore ───────────────────────────────────────────
@@ -474,7 +444,6 @@ function setLoadingMsg(msg) {
   const el = document.getElementById('loadingMsg');
   if (el) el.textContent = msg;
 }
-window.forceShowLogin = () => { showLogin(); };
 function showLogin() {
   document.getElementById('screenLoading').classList.remove('active');
   document.getElementById('screenLogin').classList.add('active');
