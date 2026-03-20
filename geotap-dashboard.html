@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GeoTap — Owner Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Syne:wght@700;800&display=swap" rel="stylesheet">
+
+<!-- ═══════════════════════════════════════════════
+     🔧 Paste the same Firebase config from your
+     customer app here (same project).
+     Also set OWNER_EMAIL to your Gmail address —
+     only that email can access this dashboard.
+═══════════════════════════════════════════════ -->
+<script>
+  const FIREBASE_CONFIG = {
+    apiKey: "AIzaSyCwJabKAoKqAIDYqJ8JQ4cuwQKXOf9PJ64",
+    authDomain: "tbm-geotap.firebaseapp.com",
+    projectId: "tbm-geotap",
+    storageBucket: "tbm-geotap.firebasestorage.app",
+    messagingSenderId: "684077488167",
+    appId: "1:684077488167:web:97185e3372bb46cbb15602",
+    measurementId: "G-S5RRW60FGL"
+  };
+  const OWNER_EMAIL = "xavier26.riya@gmail.com"; // only this email can log in
+</script>
+
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --bg:#08090d;--surface:#0f1117;--surface2:#161921;--surface3:#1d2130;
+  --border:rgba(255,255,255,0.07);--border2:rgba(255,255,255,0.12);
+  --accent:#00e5a0;--accent2:#00b87a;--amber:#f5a623;--blue:#5b9cf6;
+  --text:#eef2ff;--muted:#6b7280;--danger:#ff4f4f;
+  --success:rgba(0,229,160,0.1);--success-border:rgba(0,229,160,0.25);
+  --warn:rgba(245,166,35,0.1);--warn-border:rgba(245,166,35,0.25);
+  --red:rgba(255,79,79,0.1);--red-border:rgba(255,79,79,0.25);
+}
+body{font-family:'Space Grotesk',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;}
+
+/* ── Spinner ── */
+#screenLoading{display:flex;align-items:center;justify-content:center;min-height:100vh;flex-direction:column;gap:16px;}
+.spinner{width:36px;height:36px;border:3px solid var(--border2);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.loading-text{font-size:13px;color:var(--muted);}
+
+/* ── Login ── */
+#screenLogin{display:none;align-items:center;justify-content:center;min-height:100vh;padding:24px;}
+.login-wrap{width:100%;max-width:380px;display:flex;flex-direction:column;align-items:center;gap:0;}
+.login-badge{background:var(--surface);border:1px solid var(--border2);border-radius:20px;padding:36px 32px;width:100%;display:flex;flex-direction:column;align-items:center;}
+.login-icon{width:56px;height:56px;background:rgba(0,229,160,0.1);border:1px solid rgba(0,229,160,0.2);border-radius:16px;display:flex;align-items:center;justify-content:center;margin-bottom:20px;font-size:26px;}
+.login-title{font-family:'Syne',sans-serif;font-size:24px;font-weight:800;margin-bottom:6px;color:var(--text);}
+.login-sub{font-size:13px;color:var(--muted);text-align:center;margin-bottom:28px;line-height:1.6;}
+.login-store{font-size:12px;color:var(--accent);margin-bottom:6px;font-weight:600;letter-spacing:0.5px;}
+.google-btn{width:100%;display:flex;align-items:center;justify-content:center;gap:12px;background:#fff;color:#1f1f1f;border:none;border-radius:12px;padding:14px 20px;font-size:14px;font-weight:600;cursor:pointer;font-family:'Space Grotesk',sans-serif;transition:opacity .2s,transform .1s;}
+.google-btn:hover{opacity:.92;}
+.google-btn:active{transform:scale(.98);}
+.google-btn:disabled{opacity:.6;cursor:not-allowed;}
+.access-note{font-size:11px;color:var(--muted);margin-top:16px;text-align:center;line-height:1.5;}
+.error-msg{margin-top:14px;color:var(--danger);font-size:12px;text-align:center;display:none;}
+
+/* ── Dashboard layout ── */
+#screenDash{display:none;}
+.sidebar{position:fixed;top:0;left:0;width:220px;height:100vh;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;z-index:100;}
+.sidebar-logo{padding:24px 20px 20px;border-bottom:1px solid var(--border);}
+.sidebar-logo .logo{font-family:'Syne',sans-serif;font-size:20px;font-weight:800;color:var(--accent);}
+.sidebar-logo .logo-tag{font-size:10px;color:var(--muted);margin-top:2px;letter-spacing:.5px;}
+.sidebar-nav{flex:1;padding:16px 10px;display:flex;flex-direction:column;gap:4px;}
+.nav-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;font-size:13px;font-weight:500;color:var(--muted);cursor:pointer;transition:background .15s,color .15s;border:none;background:none;width:100%;text-align:left;font-family:'Space Grotesk',sans-serif;}
+.nav-item:hover{background:var(--surface2);color:var(--text);}
+.nav-item.active{background:rgba(0,229,160,0.1);color:var(--accent);}
+.nav-icon{font-size:16px;width:20px;text-align:center;}
+.sidebar-footer{padding:16px;border-top:1px solid var(--border);}
+.owner-pill{display:flex;align-items:center;gap:10px;}
+.owner-avatar{width:32px;height:32px;border-radius:50%;background:rgba(0,229,160,0.1);border:1px solid rgba(0,229,160,0.2);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:var(--accent);flex-shrink:0;overflow:hidden;}
+.owner-avatar img{width:100%;height:100%;object-fit:cover;}
+.owner-info{flex:1;min-width:0;}
+.owner-name{font-size:12px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.owner-role{font-size:10px;color:var(--muted);}
+.signout-btn{background:none;border:none;color:var(--muted);cursor:pointer;font-size:14px;padding:4px;border-radius:6px;transition:color .2s;}
+.signout-btn:hover{color:var(--danger);}
+
+.main{margin-left:220px;min-height:100vh;display:flex;flex-direction:column;}
+.topbar{padding:20px 28px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;}
+.topbar-title{font-family:'Syne',sans-serif;font-size:20px;font-weight:800;}
+.topbar-right{display:flex;align-items:center;gap:12px;}
+.live-badge{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--accent);background:rgba(0,229,160,0.08);border:1px solid rgba(0,229,160,0.2);border-radius:100px;padding:5px 12px;font-weight:600;}
+.live-dot{width:6px;height:6px;background:var(--accent);border-radius:50%;animation:pdot 2s infinite;}
+@keyframes pdot{0%,100%{opacity:1;}50%{opacity:.3;}}
+.refresh-btn{background:var(--surface2);border:1px solid var(--border2);border-radius:8px;padding:7px 14px;font-size:12px;font-weight:600;color:var(--muted);cursor:pointer;font-family:'Space Grotesk',sans-serif;transition:color .2s;}
+.refresh-btn:hover{color:var(--text);}
+
+.content{padding:24px 28px;flex:1;}
+
+/* ── Tab panels ── */
+.tab-panel{display:none;}
+.tab-panel.active{display:block;}
+
+/* ── KPI cards ── */
+.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:24px;}
+.kpi-card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:18px 16px;position:relative;overflow:hidden;}
+.kpi-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;border-radius:16px 16px 0 0;}
+.kpi-card.green::before{background:var(--accent);}
+.kpi-card.amber::before{background:var(--amber);}
+.kpi-card.blue::before{background:var(--blue);}
+.kpi-card.red::before{background:var(--danger);}
+.kpi-label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;font-weight:600;margin-bottom:8px;}
+.kpi-value{font-family:'Syne',sans-serif;font-size:28px;font-weight:800;line-height:1;margin-bottom:4px;}
+.kpi-card.green .kpi-value{color:var(--accent);}
+.kpi-card.amber .kpi-value{color:var(--amber);}
+.kpi-card.blue .kpi-value{color:var(--blue);}
+.kpi-card.red .kpi-value{color:var(--danger);}
+.kpi-sub{font-size:11px;color:var(--muted);}
+
+/* ── Section headers ── */
+.section-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;}
+.section-title{font-size:14px;font-weight:600;color:var(--text);}
+.section-count{font-size:12px;color:var(--muted);}
+
+/* ── Search + filter bar ── */
+.filter-bar{display:flex;gap:10px;margin-bottom:16px;align-items:center;}
+.search-wrap{flex:1;position:relative;}
+.search-wrap input{width:100%;background:var(--surface2);border:1px solid var(--border2);border-radius:10px;padding:9px 12px 9px 36px;font-size:13px;color:var(--text);font-family:'Space Grotesk',sans-serif;outline:none;transition:border-color .2s;}
+.search-wrap input:focus{border-color:rgba(0,229,160,0.4);}
+.search-wrap input::placeholder{color:var(--muted);}
+.search-icon{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:14px;pointer-events:none;}
+.filter-select{background:var(--surface2);border:1px solid var(--border2);border-radius:10px;padding:9px 12px;font-size:12px;color:var(--text);font-family:'Space Grotesk',sans-serif;cursor:pointer;outline:none;}
+.filter-select option{background:var(--surface2);}
+
+/* ── Customer table ── */
+.table-wrap{background:var(--surface);border:1px solid var(--border);border-radius:16px;overflow:hidden;}
+.table-head{display:grid;grid-template-columns:2fr 1.2fr 1fr 1fr 1fr 1.4fr;gap:0;padding:12px 16px;background:var(--surface2);border-bottom:1px solid var(--border);}
+.th{font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;}
+.table-body{max-height:420px;overflow-y:auto;}
+.table-body::-webkit-scrollbar{width:4px;}
+.table-body::-webkit-scrollbar-track{background:transparent;}
+.table-body::-webkit-scrollbar-thumb{background:var(--border2);border-radius:4px;}
+.table-row{display:grid;grid-template-columns:2fr 1.2fr 1fr 1fr 1fr 1.4fr;gap:0;padding:13px 16px;border-bottom:1px solid var(--border);transition:background .15s;align-items:center;}
+.table-row:last-child{border-bottom:none;}
+.table-row:hover{background:var(--surface2);}
+.td{font-size:13px;color:var(--text);}
+.customer-cell{display:flex;align-items:center;gap:10px;}
+.cust-avatar{width:32px;height:32px;border-radius:50%;background:var(--surface3);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:var(--accent);flex-shrink:0;overflow:hidden;}
+.cust-avatar img{width:100%;height:100%;object-fit:cover;}
+.cust-name{font-size:13px;font-weight:600;color:var(--text);}
+.cust-email{font-size:11px;color:var(--muted);}
+.bal-cell{font-family:'Syne',sans-serif;font-size:15px;font-weight:800;color:var(--accent);}
+.bal-cell.at-goal{color:var(--amber);}
+.status-pill{display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:700;border-radius:100px;padding:3px 9px;letter-spacing:.3px;}
+.status-pill.active{background:rgba(0,229,160,0.1);color:var(--accent);border:1px solid rgba(0,229,160,0.25);}
+.status-pill.pending{background:rgba(245,166,35,0.1);color:var(--amber);border:1px solid rgba(245,166,35,0.25);}
+.status-pill.redeemed{background:rgba(107,114,128,0.12);color:var(--muted);border:1px solid rgba(107,114,128,0.2);}
+.action-btn{font-size:11px;font-weight:700;border:none;border-radius:8px;padding:6px 12px;cursor:pointer;font-family:'Space Grotesk',sans-serif;transition:opacity .2s;}
+.action-btn:hover{opacity:.8;}
+.action-btn.redeem{background:rgba(245,166,35,0.15);color:var(--amber);}
+.action-btn.mark-done{background:rgba(0,229,160,0.12);color:var(--accent);}
+.action-btn.done{background:rgba(107,114,128,0.1);color:var(--muted);cursor:default;}
+.empty-state{padding:48px;text-align:center;color:var(--muted);font-size:13px;}
+
+/* ── Redemptions tab ── */
+.redemption-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:16px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;transition:background .15s;}
+.redemption-card:hover{background:var(--surface2);}
+.red-info{display:flex;flex-direction:column;gap:3px;}
+.red-name{font-size:14px;font-weight:600;color:var(--text);}
+.red-code{font-size:11px;color:var(--muted);font-family:monospace;margin-top:2px;}
+.red-meta{font-size:11px;color:var(--muted);}
+.red-right{display:flex;align-items:center;gap:12px;}
+.red-amount{font-family:'Syne',sans-serif;font-size:18px;font-weight:800;color:var(--amber);}
+
+/* ── Activity feed ── */
+.activity-feed{display:flex;flex-direction:column;gap:8px;}
+.activity-item{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:13px 16px;display:flex;align-items:center;gap:12px;animation:fadein .3s ease;}
+@keyframes fadein{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:translateY(0);}}
+.act-icon{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;}
+.act-icon.tap{background:rgba(0,229,160,0.1);}
+.act-icon.reward{background:rgba(245,166,35,0.1);}
+.act-icon.new{background:rgba(91,156,246,0.1);}
+.act-icon.redeem{background:rgba(107,114,128,0.1);}
+.act-text{flex:1;}
+.act-main{font-size:13px;color:var(--text);font-weight:500;}
+.act-sub{font-size:11px;color:var(--muted);margin-top:2px;}
+.act-time{font-size:11px;color:var(--muted);}
+.act-amt{font-family:'Syne',sans-serif;font-size:15px;font-weight:800;color:var(--accent);}
+
+/* ── Analytics ── */
+.analytics-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.chart-card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:20px;}
+.chart-title{font-size:13px;font-weight:600;color:var(--text);margin-bottom:16px;}
+.bar-chart{display:flex;align-items:flex-end;gap:8px;height:120px;}
+.bar-col{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;height:100%;}
+.bar-fill{width:100%;background:rgba(0,229,160,0.25);border-radius:4px 4px 0 0;position:relative;margin-top:auto;min-height:4px;transition:height .5s ease;}
+.bar-fill:hover{background:rgba(0,229,160,0.45);}
+.bar-label{font-size:10px;color:var(--muted);text-align:center;}
+.bar-val{font-size:9px;color:var(--accent);font-weight:600;}
+.stat-list{display:flex;flex-direction:column;gap:10px;}
+.stat-row{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border);}
+.stat-row:last-child{border-bottom:none;}
+.stat-row-label{font-size:13px;color:var(--muted);}
+.stat-row-val{font-size:14px;font-weight:600;color:var(--text);}
+
+/* ── Demo mode notice ── */
+.demo-bar{background:rgba(91,156,246,0.08);border-bottom:1px solid rgba(91,156,246,0.2);padding:8px 28px;font-size:12px;color:rgba(91,156,246,0.85);display:flex;align-items:center;gap:8px;}
+.demo-bar a{color:var(--blue);text-decoration:underline;cursor:pointer;}
+
+/* ── Confirm modal ── */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:200;display:none;align-items:center;justify-content:center;}
+.modal-overlay.show{display:flex;}
+.modal{background:var(--surface);border:1px solid var(--border2);border-radius:20px;padding:28px;width:100%;max-width:380px;}
+.modal-title{font-family:'Syne',sans-serif;font-size:18px;font-weight:800;margin-bottom:8px;}
+.modal-body{font-size:13px;color:var(--muted);line-height:1.6;margin-bottom:24px;}
+.modal-code{font-family:monospace;font-size:15px;font-weight:700;color:var(--amber);background:rgba(245,166,35,0.08);border:1px solid rgba(245,166,35,0.2);border-radius:8px;padding:10px 14px;margin:12px 0;letter-spacing:1px;}
+.modal-actions{display:flex;gap:10px;}
+.modal-btn{flex:1;padding:11px;border-radius:11px;font-size:13px;font-weight:700;font-family:'Space Grotesk',sans-serif;cursor:pointer;border:none;transition:opacity .2s;}
+.modal-btn:hover{opacity:.85;}
+.modal-btn.confirm{background:var(--accent);color:#001a0e;}
+.modal-btn.cancel{background:var(--surface2);color:var(--muted);}
+
+@media(max-width:900px){
+  .kpi-grid{grid-template-columns:1fr 1fr;}
+  .sidebar{width:60px;}.sidebar-logo .logo-tag,.nav-item span,.owner-info,.sidebar-logo .logo{display:none;}
+  .nav-icon{width:auto;}
+  .main{margin-left:60px;}
+  .table-head,.table-row{grid-template-columns:2fr 1fr 1fr 1.2fr;}
+  .td.hide-mobile,.th.hide-mobile{display:none;}
+  .analytics-grid{grid-template-columns:1fr;}
+}
+</style>
+</head>
+<body>
+
+<!-- Loading -->
+<div id="screenLoading">
+  <div class="spinner"></div>
+  <div class="loading-text">Loading dashboard…</div>
+</div>
+
+<!-- Login -->
+<div id="screenLogin">
+  <div class="login-wrap">
+    <div class="login-badge">
+      <div class="login-icon">🏪</div>
+      <div class="login-store">GeoTap · Owner Portal</div>
+      <div class="login-title">Store Dashboard</div>
+      <div class="login-sub">Sign in with your owner Google account to access customer data, balances, and redemptions.</div>
+      <button class="google-btn" id="loginBtn" onclick="ownerSignIn()">
+        <svg width="18" height="18" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+        Sign in with Google
+      </button>
+      <div class="error-msg" id="errorMsg">Access denied. Only the store owner account can log in.</div>
+      <div class="access-note">Only the email set as OWNER_EMAIL in the config can access this dashboard.</div>
+    </div>
+  </div>
+</div>
+
+<!-- Dashboard -->
+<div id="screenDash">
+  <div class="demo-bar" id="demoBar" style="display:none;">
+    ⚡ Demo mode — showing sample data. <a onclick="void 0">Connect Firebase</a> to see real customers.
+  </div>
+
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo">GeoTap</div>
+      <div class="logo-tag">OWNER DASHBOARD</div>
+    </div>
+    <div class="sidebar-nav">
+      <button class="nav-item active" onclick="switchTab('overview',this)"><span class="nav-icon">📊</span><span>Overview</span></button>
+      <button class="nav-item" onclick="switchTab('customers',this)"><span class="nav-icon">👥</span><span>Customers</span></button>
+      <button class="nav-item" onclick="switchTab('redemptions',this)"><span class="nav-icon">🎁</span><span>Redemptions</span></button>
+      <button class="nav-item" onclick="switchTab('activity',this)"><span class="nav-icon">⚡</span><span>Activity</span></button>
+    </div>
+    <div class="sidebar-footer">
+      <div class="owner-pill">
+        <div class="owner-avatar" id="ownerAvatar">?</div>
+        <div class="owner-info">
+          <div class="owner-name" id="ownerName">Owner</div>
+          <div class="owner-role">Store Admin</div>
+        </div>
+        <button class="signout-btn" onclick="ownerSignOut()" title="Sign out">↩</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main content -->
+  <div class="main">
+    <div class="topbar">
+      <div class="topbar-title" id="topbarTitle">Overview</div>
+      <div class="topbar-right">
+        <div class="live-badge"><div class="live-dot"></div>Live</div>
+        <button class="refresh-btn" onclick="loadData()">↻ Refresh</button>
+      </div>
+    </div>
+
+    <div class="content">
+
+      <!-- OVERVIEW TAB -->
+      <div class="tab-panel active" id="tab-overview">
+        <div class="kpi-grid">
+          <div class="kpi-card green">
+            <div class="kpi-label">Total customers</div>
+            <div class="kpi-value" id="kpiCustomers">—</div>
+            <div class="kpi-sub" id="kpiCustomersSub">registered accounts</div>
+          </div>
+          <div class="kpi-card amber">
+            <div class="kpi-label">Rewards pending</div>
+            <div class="kpi-value" id="kpiPending">—</div>
+            <div class="kpi-sub">reached $10 threshold</div>
+          </div>
+          <div class="kpi-card blue">
+            <div class="kpi-label">Total taps</div>
+            <div class="kpi-value" id="kpiTaps">—</div>
+            <div class="kpi-sub">all time</div>
+          </div>
+          <div class="kpi-card red">
+            <div class="kpi-label">Rewards redeemed</div>
+            <div class="kpi-value" id="kpiRedeemed">—</div>
+            <div class="kpi-sub" id="kpiRedeemedSub">total value</div>
+          </div>
+        </div>
+
+        <!-- Weekly bar chart -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
+          <div class="chart-card">
+            <div class="chart-title">Taps this week</div>
+            <div class="bar-chart" id="weekChart"></div>
+          </div>
+          <div class="chart-card">
+            <div class="chart-title">Key stats</div>
+            <div class="stat-list" id="keyStats"></div>
+          </div>
+        </div>
+
+        <!-- Top customers preview -->
+        <div class="section-header">
+          <div class="section-title">Top customers by balance</div>
+          <div class="section-count" id="topCount"></div>
+        </div>
+        <div class="table-wrap">
+          <div class="table-head">
+            <div class="th">Customer</div>
+            <div class="th">Balance</div>
+            <div class="th hide-mobile">Taps</div>
+            <div class="th hide-mobile">Visits</div>
+            <div class="th">Status</div>
+            <div class="th">Action</div>
+          </div>
+          <div class="table-body" id="topTableBody"></div>
+        </div>
+      </div>
+
+      <!-- CUSTOMERS TAB -->
+      <div class="tab-panel" id="tab-customers">
+        <div class="filter-bar">
+          <div class="search-wrap">
+            <span class="search-icon">🔍</span>
+            <input type="text" id="searchInput" placeholder="Search by name or email…" oninput="filterCustomers()">
+          </div>
+          <select class="filter-select" id="filterStatus" onchange="filterCustomers()">
+            <option value="all">All customers</option>
+            <option value="pending">Reward pending</option>
+            <option value="redeemed">Redeemed</option>
+            <option value="active">Active (no reward yet)</option>
+          </select>
+        </div>
+        <div class="table-wrap">
+          <div class="table-head">
+            <div class="th">Customer</div>
+            <div class="th">Balance</div>
+            <div class="th hide-mobile">Taps</div>
+            <div class="th hide-mobile">Visits</div>
+            <div class="th">Status</div>
+            <div class="th">Action</div>
+          </div>
+          <div class="table-body" id="allTableBody"></div>
+        </div>
+      </div>
+
+      <!-- REDEMPTIONS TAB -->
+      <div class="tab-panel" id="tab-redemptions">
+        <div class="section-header">
+          <div class="section-title">Customers who reached $10</div>
+          <div class="section-count" id="redemptionCount"></div>
+        </div>
+        <div id="redemptionList"></div>
+      </div>
+
+      <!-- ACTIVITY TAB -->
+      <div class="tab-panel" id="tab-activity">
+        <div class="section-header">
+          <div class="section-title">Recent activity</div>
+          <div class="section-count" id="activityCount"></div>
+        </div>
+        <div class="activity-feed" id="activityFeed"></div>
+      </div>
+
+    </div><!-- end content -->
+  </div><!-- end main -->
+</div><!-- end screenDash -->
+
+<!-- Confirm modal -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal">
+    <div class="modal-title" id="modalTitle">Mark reward as redeemed?</div>
+    <div class="modal-body" id="modalBody"></div>
+    <div class="modal-actions">
+      <button class="modal-btn cancel" onclick="closeModal()">Cancel</button>
+      <button class="modal-btn confirm" id="modalConfirmBtn">Confirm</button>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+import { initializeApp }       from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut as fbSignOut }
+                                from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+import { getFirestore, collection, getDocs, doc, updateDoc, query, orderBy }
+                                from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+
+const DEMO = (FIREBASE_CONFIG.apiKey === 'YOUR_API_KEY');
+let auth, db, allCustomers = [], currentOwner = null;
+
+// ── Demo data ──────────────────────────────────────────────
+function genDemoData() {
+  const names=[['Priya','Sharma','priya.sharma@gmail.com'],['Marcus','Chen','m.chen@gmail.com'],['Aisha','Williams','aisha.w@gmail.com'],['Tomás','Rivera','tomas.r@gmail.com'],['Chloe','Park','chloe.park@gmail.com'],['Jordan','Lee','j.lee@gmail.com'],['Nadia','Okafor','n.okafor@gmail.com'],['Ben','Tremblay','ben.t@gmail.com']];
+  const days=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+  return names.map(([fn,ln,em],i)=>{
+    const taps=Math.floor(Math.random()*40)+1;
+    const bal=parseFloat((taps*0.25).toFixed(2));
+    const rewardShown=bal>=10;
+    const rewardRedeemed=rewardShown&&Math.random()>.5;
+    const hist=Array.from({length:Math.min(taps,6)},(_,j)=>({
+      ts:Date.now()-j*6.5*3600000,
+      time:new Date(Date.now()-j*6.5*3600000).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}),
+      date:new Date(Date.now()-j*6.5*3600000).toLocaleDateString([],{month:'short',day:'numeric'}),
+      lat:'43.6694',lng:'-79.4825',dist:Math.floor(Math.random()*28)+2,amount:0.25
+    }));
+    return {uid:'demo-'+i,displayName:fn+' '+ln,email:em,photoURL:null,balance:bal,taps,visits:Math.ceil(taps/3),lastTap:Date.now()-Math.random()*24*3600000,rewardShown,rewardRedeemed,history:hist,weekTaps:Array.from({length:7},()=>Math.floor(Math.random()*4))};
+  });
+}
+
+// ── Init ──────────────────────────────────────────────────
+if (DEMO) {
+  document.getElementById('demoBar').style.display='flex';
+  currentOwner={displayName:'Store Owner',email:OWNER_EMAIL,photoURL:null};
+  allCustomers=genDemoData();
+  showDash();
+} else {
+  try {
+    const app=initializeApp(FIREBASE_CONFIG);
+    auth=getAuth(app);
+    db=getFirestore(app);
+    onAuthStateChanged(auth, user=>{
+      if(user){
+        if(user.email!==OWNER_EMAIL){
+          document.getElementById('errorMsg').style.display='block';
+          fbSignOut(auth);
+          showLogin();
+          return;
+        }
+        currentOwner=user;
+        loadData().then(showDash);
+      } else showLogin();
+    });
+  } catch(e){ showLogin(); }
+}
+
+// ── Load Firestore data ────────────────────────────────────
+window.loadData = async ()=>{
+  if(DEMO){renderAll();return;}
+  const snap=await getDocs(collection(db,'users'));
+  allCustomers=snap.docs.map(d=>({uid:d.id,...d.data()}));
+  renderAll();
+};
+
+// ── Auth ──────────────────────────────────────────────────
+window.ownerSignIn=async()=>{
+  if(DEMO){showDash();return;}
+  const btn=document.getElementById('loginBtn');
+  btn.disabled=true; btn.textContent='Signing in…';
+  try{
+    const p=new GoogleAuthProvider();
+    await signInWithPopup(auth,p);
+  } catch(e){ btn.disabled=false; btn.innerHTML=`<svg width="18" height="18" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>Sign in with Google`; }
+};
+window.ownerSignOut=async()=>{ if(!DEMO)await fbSignOut(auth); else location.reload(); };
+
+// ── Screens ───────────────────────────────────────────────
+function showLogin(){ document.getElementById('screenLoading').style.display='none'; document.getElementById('screenLogin').style.display='flex'; }
+function showDash(){
+  document.getElementById('screenLoading').style.display='none';
+  document.getElementById('screenLogin').style.display='none';
+  document.getElementById('screenDash').style.display='block';
+  if(currentOwner){
+    const n=currentOwner.displayName||'Owner';
+    document.getElementById('ownerName').textContent=n.split(' ')[0];
+    const av=document.getElementById('ownerAvatar');
+    if(currentOwner.photoURL){ av.innerHTML=`<img src="${currentOwner.photoURL}" alt="">`; }
+    else { av.textContent=n.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase(); }
+  }
+  renderAll();
+}
+
+// ── Tab switching ─────────────────────────────────────────
+window.switchTab=(id,el)=>{
+  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById('tab-'+id).classList.add('active');
+  el.classList.add('active');
+  const titles={overview:'Overview',customers:'Customers',redemptions:'Redemptions',activity:'Activity'};
+  document.getElementById('topbarTitle').textContent=titles[id];
+};
+
+// ── Render everything ─────────────────────────────────────
+function renderAll(){
+  renderKPIs();
+  renderWeekChart();
+  renderKeyStats();
+  renderTable('topTableBody', [...allCustomers].sort((a,b)=>b.balance-a.balance).slice(0,5));
+  renderTable('allTableBody', allCustomers);
+  renderRedemptions();
+  renderActivity();
+}
+
+function renderKPIs(){
+  const total=allCustomers.length;
+  const pending=allCustomers.filter(c=>c.rewardShown&&!c.rewardRedeemed).length;
+  const taps=allCustomers.reduce((s,c)=>s+(c.taps||0),0);
+  const redeemed=allCustomers.filter(c=>c.rewardRedeemed).length;
+  const redVal=redeemed*10;
+  document.getElementById('kpiCustomers').textContent=total;
+  document.getElementById('kpiCustomersSub').textContent=total===1?'1 registered account':total+' registered accounts';
+  document.getElementById('kpiPending').textContent=pending;
+  document.getElementById('kpiTaps').textContent=taps;
+  document.getElementById('kpiRedeemed').textContent=redeemed;
+  document.getElementById('kpiRedeemedSub').textContent='$'+redVal.toFixed(2)+' total value';
+  document.getElementById('topCount').textContent=allCustomers.length+' total';
+}
+
+function renderWeekChart(){
+  const days=['M','T','W','T','F','S','S'];
+  const totals=Array(7).fill(0);
+  allCustomers.forEach(c=>{ (c.weekTaps||[]).forEach((v,i)=>{ totals[i]+=v; }); });
+  const max=Math.max(...totals,1);
+  document.getElementById('weekChart').innerHTML=days.map((d,i)=>`
+    <div class="bar-col">
+      <div class="bar-val">${totals[i]||0}</div>
+      <div class="bar-fill" style="height:${Math.max(4,(totals[i]/max)*100)}%"></div>
+      <div class="bar-label">${d}</div>
+    </div>`).join('');
+}
+
+function renderKeyStats(){
+  const avgBal=allCustomers.length?allCustomers.reduce((s,c)=>s+c.balance,0)/allCustomers.length:0;
+  const topCust=allCustomers.sort((a,b)=>b.balance-a.balance)[0];
+  const totalEarned=allCustomers.reduce((s,c)=>s+c.balance,0);
+  document.getElementById('keyStats').innerHTML=`
+    <div class="stat-row"><div class="stat-row-label">Average balance</div><div class="stat-row-val">$${avgBal.toFixed(2)}</div></div>
+    <div class="stat-row"><div class="stat-row-label">Total outstanding</div><div class="stat-row-val">$${totalEarned.toFixed(2)}</div></div>
+    <div class="stat-row"><div class="stat-row-label">Top customer</div><div class="stat-row-val">${topCust?(topCust.displayName||'').split(' ')[0]:'—'}</div></div>
+    <div class="stat-row"><div class="stat-row-label">Conversion rate</div><div class="stat-row-val">${allCustomers.length?Math.round((allCustomers.filter(c=>c.rewardRedeemed).length/allCustomers.length)*100):0}%</div></div>`;
+}
+
+function getStatus(c){
+  if(c.rewardRedeemed) return 'redeemed';
+  if(c.rewardShown)    return 'pending';
+  return 'active';
+}
+function statusLabel(s){ return {active:'Active',pending:'Reward ready',redeemed:'Redeemed'}[s]; }
+
+function renderTable(containerId, customers){
+  const el=document.getElementById(containerId);
+  if(!customers.length){ el.innerHTML='<div class="empty-state">No customers yet</div>'; return; }
+  el.innerHTML=customers.map(c=>{
+    const status=getStatus(c);
+    const initials=(c.displayName||'?').split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+    const avatarHtml=c.photoURL?`<img src="${c.photoURL}" alt="">`:`<span>${initials}</span>`;
+    const actionHtml=status==='pending'
+      ?`<button class="action-btn redeem" onclick="openRedeemModal('${c.uid}','${(c.displayName||'').replace(/'/g,"\\'")}')">Mark redeemed</button>`
+      :status==='redeemed'
+      ?`<button class="action-btn done" disabled>Redeemed ✓</button>`
+      :`<span style="font-size:11px;color:var(--muted);">No reward yet</span>`;
+    return `<div class="table-row">
+      <div class="td customer-cell"><div class="cust-avatar">${avatarHtml}</div><div><div class="cust-name">${c.displayName||'Unknown'}</div><div class="cust-email">${c.email||''}</div></div></div>
+      <div class="td"><span class="bal-cell ${c.balance>=10?'at-goal':''}">$${(c.balance||0).toFixed(2)}</span></div>
+      <div class="td hide-mobile">${c.taps||0}</div>
+      <div class="td hide-mobile">${c.visits||0}</div>
+      <div class="td"><span class="status-pill ${status}">${statusLabel(status)}</span></div>
+      <div class="td">${actionHtml}</div>
+    </div>`;
+  }).join('');
+}
+
+window.filterCustomers=()=>{
+  const q=document.getElementById('searchInput').value.toLowerCase();
+  const f=document.getElementById('filterStatus').value;
+  let filtered=allCustomers.filter(c=>{
+    const name=(c.displayName||'').toLowerCase();
+    const email=(c.email||'').toLowerCase();
+    const matchQ=!q||name.includes(q)||email.includes(q);
+    const status=getStatus(c);
+    const matchF=f==='all'||status===f||(f==='pending'&&status==='pending');
+    return matchQ&&matchF;
+  });
+  renderTable('allTableBody',filtered);
+};
+
+function renderRedemptions(){
+  const pending=allCustomers.filter(c=>c.rewardShown&&!c.rewardRedeemed);
+  const redeemed=allCustomers.filter(c=>c.rewardRedeemed);
+  document.getElementById('redemptionCount').textContent=`${pending.length} pending · ${redeemed.length} completed`;
+  const all=[...pending,...redeemed];
+  const el=document.getElementById('redemptionList');
+  if(!all.length){ el.innerHTML='<div class="empty-state">No customers have reached $10 yet</div>'; return; }
+  el.innerHTML=all.map(c=>{
+    const isPending=!c.rewardRedeemed;
+    const code='GT-'+(c.uid||'').slice(0,8).toUpperCase()+'-10OFF';
+    return `<div class="redemption-card">
+      <div class="red-info">
+        <div class="red-name">${c.displayName||'Unknown'} <span class="status-pill ${isPending?'pending':'redeemed'}" style="margin-left:6px;">${isPending?'Pending':'Redeemed'}</span></div>
+        <div class="red-code">${code}</div>
+        <div class="red-meta">${c.email||''} · $${(c.balance||0).toFixed(2)} balance · ${c.taps||0} taps</div>
+      </div>
+      <div class="red-right">
+        <div class="red-amount">$10</div>
+        ${isPending?`<button class="action-btn redeem" onclick="openRedeemModal('${c.uid}','${(c.displayName||'').replace(/'/g,"\\'")}')">Mark redeemed</button>`:`<button class="action-btn done" disabled>Done ✓</button>`}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderActivity(){
+  const events=[];
+  allCustomers.forEach(c=>{
+    (c.history||[]).forEach(h=>{
+      events.push({type:'tap',name:c.displayName,email:c.email,ts:h.ts,time:h.time,date:h.date,dist:h.dist,amount:h.amount});
+    });
+    if(c.rewardShown) events.push({type:'reward',name:c.displayName,email:c.email,ts:c.lastTap-(0.1*3600000)});
+    if(c.rewardRedeemed) events.push({type:'redeem',name:c.displayName,email:c.email,ts:c.lastTap});
+  });
+  events.sort((a,b)=>b.ts-a.ts);
+  document.getElementById('activityCount').textContent=events.length+' events';
+  const icons={tap:'💚',reward:'🎉',new:'🆕',redeem:'✅'};
+  const labels={tap:'Tapped in-store',reward:'Reached $10 reward',new:'New customer joined',redeem:'Redeemed reward'};
+  document.getElementById('activityFeed').innerHTML=events.slice(0,30).map(e=>`
+    <div class="activity-item">
+      <div class="act-icon ${e.type}">${icons[e.type]||'•'}</div>
+      <div class="act-text">
+        <div class="act-main"><strong>${e.name||'Customer'}</strong> — ${labels[e.type]||e.type}</div>
+        <div class="act-sub">${e.email||''}${e.dist?' · '+e.dist+'m from centre':''}</div>
+      </div>
+      <div>${e.type==='tap'?`<div class="act-amt">+$${(e.amount||0.25).toFixed(2)}</div>`:`<div class="act-time">${e.date||''} ${e.time||''}</div>`}</div>
+    </div>`).join('');
+}
+
+// ── Redeem modal ──────────────────────────────────────────
+let pendingRedeemId=null;
+window.openRedeemModal=(uid,name)=>{
+  pendingRedeemId=uid;
+  const code='GT-'+(uid||'').slice(0,8).toUpperCase()+'-10OFF';
+  document.getElementById('modalTitle').textContent='Mark reward as redeemed?';
+  document.getElementById('modalBody').innerHTML=`Confirm that <strong>${name}</strong> has redeemed their $10 reward in-store.<br><div class="modal-code">${code}</div>This will clear their balance and reset their progress toward the next reward.`;
+  document.getElementById('modalConfirmBtn').onclick=confirmRedeem;
+  document.getElementById('modalOverlay').classList.add('show');
+};
+window.closeModal=()=>{ document.getElementById('modalOverlay').classList.remove('show'); pendingRedeemId=null; };
+
+async function confirmRedeem(){
+  if(!pendingRedeemId) return;
+  const cust=allCustomers.find(c=>c.uid===pendingRedeemId);
+  if(cust){
+    cust.rewardRedeemed=true;
+    cust.balance=0;
+    cust.rewardShown=false;
+    if(!DEMO&&db){
+      const ref=doc(db,'users',pendingRedeemId);
+      await updateDoc(ref,{rewardRedeemed:true,balance:0,rewardShown:false,redeemedAt:new Date().toISOString()});
+    }
+  }
+  closeModal();
+  renderAll();
+}
+</script>
+</body>
+</html>
