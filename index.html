@@ -1,0 +1,740 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GeoTap — St Clair Ave W</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Syne:wght@700;800&display=swap" rel="stylesheet">
+
+<!-- ═══════════════════════════════════════════════════════
+     🔧 SETUP REQUIRED — replace the 7 values below with
+     your own Firebase project config (takes ~5 minutes).
+     Instructions are in the SETUP GUIDE section at the
+     bottom of this file.
+═══════════════════════════════════════════════════════ -->
+<script>
+  const FIREBASE_CONFIG = {
+    apiKey: "AIzaSyCwJabKAoKqAIDYqJ8JQ4cuwQKXOf9PJ64",
+    authDomain: "tbm-geotap.firebaseapp.com",
+    projectId: "tbm-geotap",
+    storageBucket: "tbm-geotap.firebasestorage.app",
+    messagingSenderId: "684077488167",
+    appId: "1:684077488167:web:97185e3372bb46cbb15602",
+    measurementId: "G-S5RRW60FGL"
+  };
+</script>
+
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg:#0a0c10; --surface:#111318; --surface2:#181c24;
+  --border:rgba(255,255,255,0.08); --accent:#00e5a0; --amber:#f5a623;
+  --text:#f0f4ff; --muted:#6b7280; --danger:#ff4f4f;
+  --glow:0 0 40px rgba(0,229,160,0.25);
+}
+body { font-family:'Space Grotesk',sans-serif; background:var(--bg); color:var(--text); min-height:100vh; display:flex; flex-direction:column; align-items:center; overflow-x:hidden; }
+
+/* ── Screens ── */
+.screen { width:100%; max-width:480px; display:none; flex-direction:column; align-items:center; padding-bottom:48px; }
+.screen.active { display:flex; }
+
+/* ── Loading ── */
+#screenLoading { justify-content:center; align-items:center; min-height:100vh; }
+.spinner { width:40px; height:40px; border:3px solid var(--border); border-top-color:var(--accent); border-radius:50%; animation:spin 0.8s linear infinite; }
+@keyframes spin { to { transform:rotate(360deg); } }
+
+/* ── Login screen ── */
+#screenLogin { justify-content:center; align-items:center; min-height:100vh; padding:32px 24px; }
+.login-card { width:100%; max-width:360px; background:var(--surface); border:1px solid var(--border); border-radius:24px; padding:40px 32px; display:flex; flex-direction:column; align-items:center; gap:0; }
+.login-logo { font-family:'Syne',sans-serif; font-size:36px; font-weight:800; color:var(--accent); margin-bottom:6px; }
+.login-store { font-size:12px; color:var(--muted); letter-spacing:0.5px; margin-bottom:32px; }
+.login-title { font-family:'Syne',sans-serif; font-size:22px; font-weight:800; margin-bottom:8px; text-align:center; }
+.login-sub { font-size:13px; color:var(--muted); text-align:center; line-height:1.6; margin-bottom:32px; }
+.google-btn { width:100%; display:flex; align-items:center; justify-content:center; gap:12px; background:#fff; color:#1f1f1f; border:none; border-radius:12px; padding:14px 20px; font-size:15px; font-weight:600; cursor:pointer; font-family:'Space Grotesk',sans-serif; transition:opacity 0.2s, transform 0.1s; }
+.google-btn:hover { opacity:0.92; }
+.google-btn:active { transform:scale(0.98); }
+.google-btn svg { flex-shrink:0; }
+.login-terms { font-size:11px; color:var(--muted); text-align:center; margin-top:20px; line-height:1.5; }
+
+/* ── Main app header ── */
+.app-header { width:100%; max-width:480px; display:flex; justify-content:space-between; align-items:center; padding:20px 20px 0; }
+.header-left { display:flex; align-items:center; gap:10px; }
+.avatar { width:36px; height:36px; border-radius:50%; border:2px solid var(--accent); object-fit:cover; }
+.avatar-placeholder { width:36px; height:36px; border-radius:50%; border:2px solid var(--accent); background:var(--surface2); display:flex; align-items:center; justify-content:center; font-size:14px; font-weight:700; color:var(--accent); }
+.user-name { font-size:13px; font-weight:600; color:var(--text); }
+.user-email { font-size:11px; color:var(--muted); }
+.wallet-pill { background:var(--surface2); border:1px solid var(--border); border-radius:100px; padding:8px 16px; font-size:15px; font-weight:600; color:var(--accent); display:flex; align-items:center; gap:6px; }
+.wallet-pill::before { content:''; width:8px; height:8px; background:var(--accent); border-radius:50%; display:block; }
+
+/* ── $10 reward banner ── */
+.reward-banner { width:calc(100% - 40px); max-width:440px; margin:14px 0 0; border-radius:16px; padding:16px; background:linear-gradient(135deg,rgba(245,166,35,0.12),rgba(245,166,35,0.06)); border:1px solid rgba(245,166,35,0.35); display:none; }
+.reward-banner.show { display:block; animation:slidein 0.4s ease; }
+.reward-top { display:flex; align-items:center; gap:10px; margin-bottom:8px; }
+.reward-emoji { font-size:24px; }
+.reward-title { font-family:'Syne',sans-serif; font-size:16px; font-weight:800; color:var(--amber); }
+.reward-msg { font-size:13px; color:rgba(245,166,35,0.85); line-height:1.55; }
+.reward-actions { display:flex; gap:8px; margin-top:12px; }
+.reward-btn { flex:1; padding:9px 12px; border-radius:10px; font-size:12px; font-weight:700; font-family:'Space Grotesk',sans-serif; cursor:pointer; border:none; transition:opacity 0.2s; }
+.reward-btn.primary { background:var(--amber); color:#1a0e00; }
+.reward-btn.secondary { background:rgba(245,166,35,0.12); color:var(--amber); border:1px solid rgba(245,166,35,0.3); }
+.reward-btn:hover { opacity:0.85; }
+
+/* ── Fence banner ── */
+.fence-banner { width:calc(100% - 40px); max-width:440px; margin:12px 0 0; border-radius:14px; padding:13px 16px; display:flex; align-items:center; gap:12px; font-size:13px; font-weight:500; line-height:1.4; transition:all 0.4s; }
+.fence-banner.checking { background:rgba(107,114,128,0.1); border:1px solid rgba(107,114,128,0.25); color:var(--muted); }
+.fence-banner.inside { background:rgba(0,229,160,0.08); border:1px solid rgba(0,229,160,0.3); color:var(--accent); }
+.fence-banner.outside { background:rgba(255,79,79,0.08); border:1px solid rgba(255,79,79,0.3); color:var(--danger); }
+.fence-banner.denied { background:rgba(245,166,35,0.08); border:1px solid rgba(245,166,35,0.3); color:var(--amber); }
+.fence-icon { width:34px; height:34px; border-radius:50%; display:flex; align-items:center; justify-content:center; flex-shrink:0; font-size:15px; font-weight:700; }
+.fence-banner.checking .fence-icon { background:rgba(107,114,128,0.15); }
+.fence-banner.inside .fence-icon { background:rgba(0,229,160,0.12); }
+.fence-banner.outside .fence-icon { background:rgba(255,79,79,0.12); }
+.fence-banner.denied .fence-icon { background:rgba(245,166,35,0.12); }
+.fence-text strong { display:block; font-weight:600; font-size:14px; }
+.fence-text span { font-size:12px; opacity:0.8; }
+.btn-enable { margin-top:6px; background:var(--amber); color:#1a0e00; border:none; border-radius:8px; padding:6px 14px; font-size:12px; font-weight:700; cursor:pointer; font-family:'Space Grotesk',sans-serif; display:inline-block; }
+
+/* ── Map ── */
+.map-container { width:100%; max-width:480px; margin:14px 0 0; padding:0 20px; }
+.map-box { width:100%; height:180px; background:var(--surface); border:1px solid var(--border); border-radius:20px; position:relative; overflow:hidden; }
+.map-box::before { content:''; position:absolute; inset:0; background-image:linear-gradient(rgba(0,229,160,0.04) 1px,transparent 1px),linear-gradient(90deg,rgba(0,229,160,0.04) 1px,transparent 1px); background-size:28px 28px; }
+.map-label { position:absolute; top:11px; left:13px; font-size:10px; font-weight:600; color:var(--muted); letter-spacing:1px; text-transform:uppercase; background:rgba(10,12,16,0.75); padding:4px 8px; border-radius:6px; z-index:3; }
+.map-roads { position:absolute; inset:0; }
+.fence-circle { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:84px; height:84px; border-radius:50%; border:1.5px dashed rgba(0,229,160,0.3); background:rgba(0,229,160,0.04); transition:border-color 0.4s,background 0.4s; }
+.fence-circle.outside { border-color:rgba(255,79,79,0.5); background:rgba(255,79,79,0.05); }
+.fence-circle.inside { border-color:rgba(0,229,160,0.55); background:rgba(0,229,160,0.06); animation:fpulse 3s infinite; }
+@keyframes fpulse { 0%,100%{box-shadow:0 0 0 0 rgba(0,229,160,0.15);}50%{box-shadow:0 0 0 14px rgba(0,229,160,0);} }
+.store-pin { position:absolute; top:50%; left:50%; transform:translate(-50%,-100%); display:flex; flex-direction:column; align-items:center; z-index:4; }
+.store-pin-head { width:20px; height:20px; background:var(--accent); border-radius:50% 50% 50% 0; transform:rotate(-45deg); display:flex; align-items:center; justify-content:center; box-shadow:var(--glow); }
+.store-pin-dot { width:7px; height:7px; background:var(--bg); border-radius:50%; transform:rotate(45deg); }
+.store-pin-tail { width:2px; height:7px; background:var(--accent); }
+.user-dot { position:absolute; width:13px; height:13px; background:#5b9cf6; border:2px solid #fff; border-radius:50%; z-index:3; opacity:0; transition:opacity 0.5s,top 0.8s ease,left 0.8s ease; }
+.user-dot.visible { opacity:1; }
+.dist-badge { position:absolute; top:11px; right:13px; background:rgba(10,12,16,0.8); border:1px solid var(--border); border-radius:8px; padding:4px 9px; font-size:11px; font-weight:600; color:var(--muted); z-index:3; transition:color 0.3s,border-color 0.3s; }
+.dist-badge.inside { color:var(--accent); border-color:rgba(0,229,160,0.3); }
+.dist-badge.outside { color:var(--danger); border-color:rgba(255,79,79,0.3); }
+.loc-status { position:absolute; bottom:11px; left:13px; right:13px; display:flex; align-items:center; gap:8px; font-size:11px; color:var(--muted); background:rgba(10,12,16,0.8); padding:7px 11px; border-radius:9px; z-index:3; }
+.loc-dot { width:7px; height:7px; border-radius:50%; background:var(--muted); flex-shrink:0; transition:background 0.3s; }
+.loc-dot.active { background:var(--accent); animation:pdot 2s infinite; }
+.loc-dot.error { background:var(--danger); }
+@keyframes pdot { 0%,100%{box-shadow:0 0 0 0 rgba(0,229,160,0.6);}50%{box-shadow:0 0 0 5px rgba(0,229,160,0);} }
+
+/* ── Tap button ── */
+.tap-zone { margin:24px 0 0; display:flex; flex-direction:column; align-items:center; }
+.tap-btn-wrap { position:relative; width:176px; height:176px; display:flex; align-items:center; justify-content:center; }
+.tap-ring { position:absolute; width:176px; height:176px; border-radius:50%; border:2px solid var(--accent); opacity:0.15; transition:border-color 0.4s; }
+.tap-ring.blocked { border-color:var(--danger); }
+.tap-ring:nth-child(2) { width:152px; height:152px; opacity:0.25; }
+.ripple-ring { position:absolute; width:128px; height:128px; border-radius:50%; border:2px solid var(--accent); pointer-events:none; opacity:0; }
+.ripple-ring.pop { animation:rpop 0.6s ease-out forwards; }
+@keyframes rpop { 0%{transform:scale(1);opacity:0.8;}100%{transform:scale(2.2);opacity:0;} }
+.float-reward { position:absolute; top:-10px; font-family:'Syne',sans-serif; font-size:22px; font-weight:800; color:var(--accent); pointer-events:none; opacity:0; z-index:10; }
+.float-reward.fly { animation:flyup 1s ease-out forwards; }
+@keyframes flyup { 0%{transform:translateY(0);opacity:1;}100%{transform:translateY(-80px);opacity:0;} }
+.tap-btn { width:128px; height:128px; border-radius:50%; background:linear-gradient(145deg,#0f1a14,#0d1a12); border:2px solid var(--accent); cursor:pointer; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; transition:transform 0.1s,box-shadow 0.2s,border-color 0.3s; position:relative; z-index:2; box-shadow:var(--glow),inset 0 1px 0 rgba(0,229,160,0.1); -webkit-tap-highlight-color:transparent; user-select:none; }
+.tap-btn:hover:not(:disabled) { transform:scale(1.04); box-shadow:0 0 60px rgba(0,229,160,0.35),inset 0 1px 0 rgba(0,229,160,0.1); }
+.tap-btn:active:not(:disabled) { transform:scale(0.96); }
+.tap-btn:disabled { border-color:var(--muted); box-shadow:none; cursor:not-allowed; opacity:0.55; }
+.tap-btn.fence-blocked { border-color:var(--danger)!important; box-shadow:0 0 30px rgba(255,79,79,0.15)!important; opacity:1!important; cursor:not-allowed; }
+.tap-amount { font-family:'Syne',sans-serif; font-size:26px; font-weight:800; color:var(--accent); line-height:1; transition:color 0.3s; }
+.tap-btn:disabled .tap-amount { color:var(--muted); }
+.tap-btn.fence-blocked .tap-amount { color:var(--danger)!important; }
+.tap-label { font-size:10px; color:var(--muted); font-weight:500; letter-spacing:1px; text-transform:uppercase; }
+@keyframes shake { 0%,100%{transform:translateX(0);}20%{transform:translateX(-7px);}40%{transform:translateX(7px);}60%{transform:translateX(-4px);}80%{transform:translateX(4px);} }
+.shake { animation:shake 0.4s ease; }
+
+/* ── Progress bar toward $10 ── */
+.progress-section { width:calc(100% - 40px); max-width:440px; margin:20px 0 0; background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:16px; }
+.progress-top { display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; }
+.progress-label { font-size:12px; color:var(--muted); font-weight:600; text-transform:uppercase; letter-spacing:0.5px; }
+.progress-amount { font-family:'Syne',sans-serif; font-size:16px; font-weight:800; color:var(--accent); }
+.progress-track { width:100%; height:6px; background:var(--surface2); border-radius:100px; overflow:hidden; }
+.progress-fill { height:100%; background:linear-gradient(90deg,var(--accent),#00c97a); border-radius:100px; transition:width 0.6s ease; min-width:4px; }
+.progress-ticks { display:flex; justify-content:space-between; margin-top:6px; }
+.progress-tick { font-size:10px; color:var(--muted); }
+
+/* ── Cooldown ── */
+.cooldown-box { margin-top:20px; text-align:center; min-height:52px; display:flex; flex-direction:column; align-items:center; gap:5px; }
+.cd-label { font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:1px; font-weight:600; }
+.cd-timer { font-family:'Syne',sans-serif; font-size:28px; font-weight:800; color:var(--amber); letter-spacing:2px; line-height:1; }
+.cd-bar-wrap { width:176px; height:3px; background:var(--surface2); border-radius:100px; overflow:hidden; margin-top:5px; }
+.cd-bar { height:100%; background:var(--amber); border-radius:100px; transition:width 1s linear; }
+.ready-msg { font-size:13px; color:var(--accent); font-weight:600; opacity:0; transition:opacity 0.4s; }
+.ready-msg.show { opacity:1; }
+
+/* ── Stats ── */
+.stats-row { width:100%; max-width:480px; padding:0 20px; margin-top:24px; display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; }
+.stat-card { background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:13px 10px; text-align:center; }
+.stat-value { font-family:'Syne',sans-serif; font-size:19px; font-weight:800; color:var(--text); line-height:1; }
+.stat-label { font-size:10px; color:var(--muted); margin-top:4px; text-transform:uppercase; letter-spacing:0.5px; }
+
+/* ── History ── */
+.history-section { width:100%; max-width:480px; padding:0 20px; margin-top:24px; }
+.history-heading { display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; }
+.history-heading span { font-size:11px; font-weight:600; color:var(--muted); text-transform:uppercase; letter-spacing:1px; }
+.signout-btn { font-size:11px; color:var(--muted); background:none; border:1px solid var(--border); border-radius:8px; padding:5px 10px; cursor:pointer; font-family:'Space Grotesk',sans-serif; transition:color 0.2s; }
+.signout-btn:hover { color:var(--danger); border-color:rgba(255,79,79,0.3); }
+.history-list { display:flex; flex-direction:column; gap:8px; }
+.history-item { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:12px 14px; display:flex; justify-content:space-between; align-items:center; animation:slidein 0.3s ease; }
+@keyframes slidein { from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);} }
+.history-loc { font-size:12px; color:var(--text); font-weight:500; }
+.history-meta { font-size:11px; color:var(--muted); margin-top:2px; }
+.history-amt { font-family:'Syne',sans-serif; font-size:16px; font-weight:800; color:var(--accent); }
+.geo-badge { display:inline-flex; align-items:center; font-size:9px; font-weight:700; color:rgba(0,229,160,0.8); background:rgba(0,229,160,0.08); border:1px solid rgba(0,229,160,0.2); border-radius:5px; padding:2px 6px; margin-left:5px; vertical-align:middle; letter-spacing:0.5px; }
+.no-history { color:var(--muted); font-size:13px; text-align:center; padding:20px; }
+
+/* ── Config notice ── */
+.config-notice { width:calc(100% - 40px); max-width:440px; margin:16px 0 0; background:rgba(91,156,246,0.08); border:1px solid rgba(91,156,246,0.25); border-radius:14px; padding:14px 16px; font-size:12px; color:rgba(91,156,246,0.9); line-height:1.6; display:none; }
+.config-notice strong { display:block; font-size:13px; margin-bottom:4px; }
+.config-notice code { background:rgba(91,156,246,0.12); border-radius:4px; padding:1px 5px; font-family:monospace; font-size:11px; }
+</style>
+</head>
+<body>
+
+<!-- ── Loading ── -->
+<div id="screenLoading" class="screen active" style="min-height:100vh;justify-content:center;">
+  <div class="spinner"></div>
+</div>
+
+<!-- ── Login ── -->
+<div id="screenLogin" class="screen">
+  <div class="config-notice" id="configNotice">
+    <strong>⚙️ Firebase not configured yet</strong>
+    Running in demo mode. See the setup guide at the bottom of this file to connect your Firebase project and enable real Google login + cloud storage.
+  </div>
+  <div class="login-card">
+    <div class="login-logo">GeoTap</div>
+    <div class="login-store">2422 St Clair Ave W · Toronto</div>
+    <div class="login-title">Earn rewards every visit</div>
+    <div class="login-sub">Sign in with Google to track your balance across visits. Tap in-store to earn $0.25 every 6 hours.</div>
+    <button class="google-btn" id="googleSignInBtn" onclick="signInWithGoogle()">
+      <svg width="20" height="20" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+      Continue with Google
+    </button>
+    <div class="login-terms">By signing in you agree to receive reward notifications from this store. Your email is used only to track your balance.</div>
+  </div>
+</div>
+
+<!-- ── Main App ── -->
+<div id="screenApp" class="screen">
+
+  <div class="app-header" style="width:100%;max-width:480px;">
+    <div class="header-left">
+      <img id="userAvatar" class="avatar" src="" alt="" style="display:none;">
+      <div id="userAvatarPlaceholder" class="avatar-placeholder"></div>
+      <div>
+        <div class="user-name" id="userName">—</div>
+        <div class="user-email" id="userEmail">—</div>
+      </div>
+    </div>
+    <div class="wallet-pill" id="walletDisplay">$0.00</div>
+  </div>
+
+  <!-- $10 reward notification -->
+  <div class="reward-banner" id="rewardBanner">
+    <div class="reward-top">
+      <div class="reward-emoji">🎉</div>
+      <div class="reward-title">You've reached $10!</div>
+    </div>
+    <div class="reward-msg">Order within the next week to get <strong>$12 off</strong>, or redeem <strong>$10 off</strong> on your next in-store visit whenever you're ready.</div>
+    <div class="reward-actions">
+      <button class="reward-btn primary" onclick="redeemOnline()">Order online — save $12</button>
+      <button class="reward-btn secondary" onclick="redeemInStore()">Redeem in-store</button>
+    </div>
+  </div>
+
+  <!-- Fence banner -->
+  <div class="fence-banner checking" id="fenceBanner">
+    <div class="fence-icon" id="fenceIcon">⏳</div>
+    <div class="fence-text">
+      <strong id="fenceTitle">Checking your location…</strong>
+      <span id="fenceSub">Verifying you're inside the store</span>
+    </div>
+  </div>
+
+  <!-- Map -->
+  <div class="map-container">
+    <div class="map-box">
+      <svg class="map-roads" viewBox="0 0 440 180" preserveAspectRatio="xMidYMid slice">
+        <line x1="0" y1="72" x2="440" y2="72" stroke="rgba(255,255,255,0.045)" stroke-width="9"/>
+        <line x1="0" y1="125" x2="440" y2="125" stroke="rgba(255,255,255,0.03)" stroke-width="5"/>
+        <line x1="110" y1="0" x2="110" y2="180" stroke="rgba(255,255,255,0.04)" stroke-width="8"/>
+        <line x1="290" y1="0" x2="290" y2="180" stroke="rgba(255,255,255,0.03)" stroke-width="5"/>
+        <rect x="120" y="16" width="60" height="46" rx="3" fill="rgba(255,255,255,0.025)"/>
+        <rect x="192" y="16" width="88" height="46" rx="3" fill="rgba(255,255,255,0.018)"/>
+        <rect x="120" y="82" width="78" height="34" rx="3" fill="rgba(255,255,255,0.02)"/>
+        <rect x="300" y="82" width="75" height="34" rx="3" fill="rgba(255,255,255,0.025)"/>
+        <rect x="300" y="16" width="55" height="46" rx="3" fill="rgba(255,255,255,0.015)"/>
+        <rect x="20" y="16" width="80" height="46" rx="3" fill="rgba(255,255,255,0.018)"/>
+      </svg>
+      <div class="map-label">Geo-fence · 30m radius</div>
+      <div class="fence-circle" id="fenceCircle"></div>
+      <div class="store-pin">
+        <div class="store-pin-head"><div class="store-pin-dot"></div></div>
+        <div class="store-pin-tail"></div>
+      </div>
+      <div class="user-dot" id="userDot"></div>
+      <div class="dist-badge" id="distBadge">— m</div>
+      <div class="loc-status">
+        <div class="loc-dot" id="locDot"></div>
+        <span id="locText">Requesting location…</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tap button -->
+  <div class="tap-zone">
+    <div class="tap-btn-wrap" id="tapWrap">
+      <div class="tap-ring" id="tapRing1"></div>
+      <div class="tap-ring" id="tapRing2"></div>
+      <div class="ripple-ring" id="rippleRing"></div>
+      <div class="float-reward" id="floatReward">+$0.25</div>
+      <button class="tap-btn" id="tapBtn" onclick="handleTap()">
+        <div class="tap-amount" id="tapAmount">$0.25</div>
+        <div class="tap-label" id="tapLabel">tap to earn</div>
+      </button>
+    </div>
+  </div>
+
+  <!-- Progress to $10 -->
+  <div class="progress-section">
+    <div class="progress-top">
+      <div class="progress-label">Progress to reward</div>
+      <div class="progress-amount" id="progressAmt">$0.00 / $10.00</div>
+    </div>
+    <div class="progress-track">
+      <div class="progress-fill" id="progressFill" style="width:0%"></div>
+    </div>
+    <div class="progress-ticks">
+      <span class="progress-tick">$0</span>
+      <span class="progress-tick">$2.50</span>
+      <span class="progress-tick">$5</span>
+      <span class="progress-tick">$7.50</span>
+      <span class="progress-tick">$10</span>
+    </div>
+  </div>
+
+  <!-- Cooldown -->
+  <div class="cooldown-box">
+    <div class="cd-label" id="cdLabel" style="display:none;">Next tap in</div>
+    <div class="cd-timer" id="cdTimer"></div>
+    <div class="cd-bar-wrap" id="cdWrap" style="display:none;">
+      <div class="cd-bar" id="cdBar" style="width:100%"></div>
+    </div>
+    <div class="ready-msg" id="readyMsg">Ready to earn!</div>
+  </div>
+
+  <!-- Stats -->
+  <div class="stats-row">
+    <div class="stat-card"><div class="stat-value" id="sTotal">$0.00</div><div class="stat-label">Balance</div></div>
+    <div class="stat-card"><div class="stat-value" id="sTaps">0</div><div class="stat-label">Total taps</div></div>
+    <div class="stat-card"><div class="stat-value" id="sVisits">0</div><div class="stat-label">Visits</div></div>
+  </div>
+
+  <!-- History -->
+  <div class="history-section">
+    <div class="history-heading">
+      <span>Tap history</span>
+      <button class="signout-btn" onclick="signOut()">Sign out</button>
+    </div>
+    <div class="history-list" id="histList">
+      <div class="no-history">No taps yet — you're all set to earn!</div>
+    </div>
+  </div>
+
+</div><!-- end screenApp -->
+
+<!-- Firebase SDKs -->
+<script type="module">
+import { initializeApp }          from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut as fbSignOut }
+                                   from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+import { getFirestore, doc, getDoc, setDoc, updateDoc, arrayUnion, serverTimestamp }
+                                   from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+
+// ─── Constants ───────────────────────────────────────────
+const STORE    = { lat: 43.669468, lng: -79.482520, radius: 30 };
+const COOLDOWN = 6 * 60 * 60 * 1000;
+const REWARD   = 0.25;
+const GOAL     = 10.00;
+
+// ─── State ───────────────────────────────────────────────
+let auth, db, currentUser = null, userData = null;
+let userLat = null, userLng = null, inside = false, locOk = false;
+let firebaseReady = false;
+
+// ─── Demo mode (no Firebase config) ──────────────────────
+const DEMO = (FIREBASE_CONFIG.apiKey === 'YOUR_API_KEY');
+
+if (DEMO) {
+  document.getElementById('configNotice').style.display = 'block';
+  // Use localStorage as fallback in demo mode
+  userData = JSON.parse(localStorage.getItem('gt_demo_user') || 'null') || {
+    balance: 0, taps: 0, visits: 0, lastTap: 0,
+    rewardShown: false, rewardRedeemed: false, history: []
+  };
+  currentUser = { displayName: 'Demo User', email: 'demo@example.com', photoURL: null };
+  showApp();
+} else {
+  // Real Firebase init
+  try {
+    const app = initializeApp(FIREBASE_CONFIG);
+    auth = getAuth(app);
+    db   = getFirestore(app);
+    firebaseReady = true;
+
+    onAuthStateChanged(auth, async user => {
+      if (user) {
+        currentUser = user;
+        await loadUserData();
+        showApp();
+      } else {
+        showLogin();
+      }
+    });
+  } catch(e) {
+    console.error('Firebase init failed:', e);
+    showLogin();
+  }
+}
+
+// ─── Auth ─────────────────────────────────────────────────
+window.signInWithGoogle = async () => {
+  if (DEMO) { showApp(); return; }
+  const btn = document.getElementById('googleSignInBtn');
+  btn.disabled = true;
+  btn.textContent = 'Signing in…';
+  try {
+    const provider = new GoogleAuthProvider();
+    await signInWithPopup(auth, provider);
+  } catch(e) {
+    btn.disabled = false;
+    btn.innerHTML = `<svg width="20" height="20" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>Continue with Google`;
+    console.error('Sign-in error:', e);
+  }
+};
+
+window.signOut = async () => {
+  if (DEMO) { location.reload(); return; }
+  if (firebaseReady) await fbSignOut(auth);
+};
+
+// ─── Firestore ───────────────────────────────────────────
+async function loadUserData() {
+  const ref  = doc(db, 'users', currentUser.uid);
+  const snap = await getDoc(ref);
+  if (snap.exists()) {
+    userData = snap.data();
+  } else {
+    userData = { balance:0, taps:0, visits:0, lastTap:0, rewardShown:false, rewardRedeemed:false, history:[] };
+    await setDoc(ref, userData);
+  }
+}
+
+async function saveUserData(patch) {
+  if (DEMO) {
+    Object.assign(userData, patch);
+    localStorage.setItem('gt_demo_user', JSON.stringify(userData));
+    return;
+  }
+  if (!firebaseReady || !currentUser) return;
+  const ref = doc(db, 'users', currentUser.uid);
+  await updateDoc(ref, patch);
+  Object.assign(userData, patch);
+}
+
+// ─── Show screens ─────────────────────────────────────────
+function showLogin() {
+  document.getElementById('screenLoading').classList.remove('active');
+  document.getElementById('screenLogin').classList.add('active');
+}
+function showApp() {
+  document.getElementById('screenLoading').classList.remove('active');
+  document.getElementById('screenLogin').classList.remove('active');
+  document.getElementById('screenApp').classList.add('active');
+
+  // Populate user info
+  const name  = currentUser.displayName || 'Valued Customer';
+  const email = currentUser.email || '';
+  const photo = currentUser.photoURL;
+  document.getElementById('userName').textContent  = name.split(' ')[0];
+  document.getElementById('userEmail').textContent = email;
+  const initials = name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+  if (photo) {
+    document.getElementById('userAvatar').src = photo;
+    document.getElementById('userAvatar').style.display = 'block';
+    document.getElementById('userAvatarPlaceholder').style.display = 'none';
+  } else {
+    document.getElementById('userAvatarPlaceholder').textContent = initials;
+  }
+
+  updateUI();
+  renderHist();
+  checkRewardBanner();
+  updateCD();
+  setInterval(updateCD, 1000);
+  startLoc();
+}
+
+// ─── Haversine ────────────────────────────────────────────
+function haversine(a,b,c,d){
+  const R=6371000,dL=(c-a)*Math.PI/180,dG=(d-b)*Math.PI/180;
+  const x=Math.sin(dL/2)**2+Math.cos(a*Math.PI/180)*Math.cos(c*Math.PI/180)*Math.sin(dG/2)**2;
+  return R*2*Math.atan2(Math.sqrt(x),Math.sqrt(1-x));
+}
+
+// ─── Geo-fence ────────────────────────────────────────────
+function setFence(dist) {
+  const d = Math.round(dist);
+  inside  = dist <= STORE.radius;
+  document.getElementById('distBadge').textContent  = d + 'm away';
+  document.getElementById('distBadge').className    = 'dist-badge '+(inside?'inside':'outside');
+  document.getElementById('fenceCircle').className  = 'fence-circle '+(inside?'inside':'outside');
+  document.getElementById('tapRing1').className     = 'tap-ring'+(inside?'':' blocked');
+  document.getElementById('tapRing2').className     = 'tap-ring'+(inside?'':' blocked');
+
+  if (inside) {
+    document.getElementById('fenceBanner').className = 'fence-banner inside';
+    document.getElementById('fenceIcon').textContent  = '✓';
+    document.getElementById('fenceTitle').textContent = "You're inside the store!";
+    document.getElementById('fenceSub').textContent   = d+'m from centre — tap to earn $0.25';
+    document.getElementById('tapAmount').style.color  = '';
+    document.getElementById('tapBtn').classList.remove('fence-blocked');
+  } else {
+    document.getElementById('fenceBanner').className = 'fence-banner outside';
+    document.getElementById('fenceIcon').textContent  = '✕';
+    document.getElementById('fenceTitle').textContent = 'Outside geo-fence';
+    document.getElementById('fenceSub').textContent   = "You're "+d+"m away — move within "+STORE.radius+"m to earn.";
+    document.getElementById('tapAmount').style.color  = 'var(--danger)';
+    document.getElementById('tapBtn').classList.add('fence-blocked');
+  }
+  refreshBtn();
+}
+
+function refreshBtn() {
+  const btn = document.getElementById('tapBtn');
+  const inCD = userData && userData.lastTap > 0 && (Date.now()-userData.lastTap) < COOLDOWN;
+  btn.disabled = !locOk || !inside || inCD || (userData && userData.rewardRedeemed);
+  if (!inside && locOk) btn.classList.add('fence-blocked');
+  else if (inside)      btn.classList.remove('fence-blocked');
+}
+
+// ─── Location ─────────────────────────────────────────────
+function startLoc() {
+  if (!navigator.geolocation) { onErr(); return; }
+  document.getElementById('locText').textContent = 'Locating…';
+  navigator.geolocation.getCurrentPosition(onPos, onErr, {enableHighAccuracy:true,timeout:10000});
+  navigator.geolocation.watchPosition(onPos, onErr, {enableHighAccuracy:true});
+}
+window.startLoc = startLoc;
+
+function onPos(pos) {
+  locOk   = true;
+  userLat = pos.coords.latitude;
+  userLng = pos.coords.longitude;
+  const acc  = Math.round(pos.coords.accuracy);
+  const dist = haversine(userLat,userLng,STORE.lat,STORE.lng);
+  document.getElementById('locDot').className   = 'loc-dot active';
+  document.getElementById('locText').textContent = 'GPS locked (±'+acc+'m)';
+  document.getElementById('userDot').classList.add('visible');
+  const scale=45/200;
+  const dx=(userLng-STORE.lng)*111320*Math.cos(STORE.lat*Math.PI/180)*scale;
+  const dy=(STORE.lat-userLat)*111320*scale;
+  const dot=document.getElementById('userDot');
+  dot.style.left=(50+Math.max(-45,Math.min(45,dx)))+'%';
+  dot.style.top =(50+Math.max(-45,Math.min(45,dy)))+'%';
+  setFence(dist);
+}
+function onErr() {
+  document.getElementById('locDot').className   = 'loc-dot error';
+  document.getElementById('locText').textContent = 'Location denied';
+  document.getElementById('fenceBanner').className = 'fence-banner denied';
+  document.getElementById('fenceIcon').textContent  = '!';
+  document.getElementById('fenceTitle').textContent = 'Location access required';
+  document.getElementById('fenceSub').innerHTML     = "Allow location to verify you're in-store.<br><button class='btn-enable' onclick='startLoc()'>Enable Location</button>";
+  document.getElementById('tapBtn').disabled = true;
+}
+
+// ─── Tap ──────────────────────────────────────────────────
+window.handleTap = async () => {
+  if (!inside) {
+    const w=document.getElementById('tapWrap');
+    w.classList.remove('shake'); void w.offsetWidth; w.classList.add('shake');
+    return;
+  }
+  const now=Date.now();
+  if (userData.lastTap>0 && (now-userData.lastTap)<COOLDOWN) return;
+  if (userData.rewardRedeemed) return;
+
+  const newBal   = parseFloat((userData.balance+REWARD).toFixed(2));
+  const newTaps  = userData.taps+1;
+  const today    = new Date().toDateString();
+  const lastDay  = userData.history.length ? new Date(userData.history[0].ts).toDateString() : null;
+  const newVisits= lastDay!==today ? userData.visits+1 : userData.visits;
+  const dist     = Math.round(haversine(userLat,userLng,STORE.lat,STORE.lng));
+  const entry    = { ts:now, time:new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}), date:new Date().toLocaleDateString([],{month:'short',day:'numeric'}), lat:userLat?.toFixed(5), lng:userLng?.toFixed(5), dist, amount:REWARD };
+
+  // Optimistic UI update
+  userData.balance = newBal;
+  userData.taps    = newTaps;
+  userData.visits  = newVisits;
+  userData.lastTap = now;
+  userData.history.unshift(entry);
+
+  // Persist
+  if (DEMO) {
+    localStorage.setItem('gt_demo_user', JSON.stringify(userData));
+  } else {
+    const ref = doc(db,'users',currentUser.uid);
+    await updateDoc(ref, {
+      balance: newBal, taps: newTaps, visits: newVisits, lastTap: now,
+      history: arrayUnion(entry), updatedAt: serverTimestamp()
+    });
+  }
+
+  updateUI(); updateCD(); animateTap(); renderHist();
+
+  // Check $10 milestone
+  if (newBal >= GOAL && !userData.rewardShown) {
+    userData.rewardShown = true;
+    if (!DEMO) {
+      const ref = doc(db,'users',currentUser.uid);
+      await updateDoc(ref,{rewardShown:true});
+    } else {
+      localStorage.setItem('gt_demo_user', JSON.stringify(userData));
+    }
+    setTimeout(()=>{ document.getElementById('rewardBanner').classList.add('show'); }, 600);
+  }
+};
+
+function animateTap() {
+  const r=document.getElementById('rippleRing');
+  r.classList.remove('pop'); void r.offsetWidth; r.classList.add('pop');
+  const f=document.getElementById('floatReward');
+  f.classList.remove('fly'); void f.offsetWidth; f.classList.add('fly');
+}
+
+// ─── Reward redemption ────────────────────────────────────
+window.redeemOnline = async () => {
+  alert('Share this code with your server or enter it online:\n\nGT-' + (currentUser.uid || 'DEMO').slice(0,8).toUpperCase() + '-12OFF\n\nValid for 7 days. $12 off your order.');
+};
+window.redeemInStore = async () => {
+  const code = 'GT-'+(currentUser.uid||'DEMO').slice(0,8).toUpperCase()+'-10OFF';
+  alert('Show this code to staff:\n\n' + code + '\n\n$10 off your in-store visit. No expiry.');
+};
+
+function checkRewardBanner() {
+  if (userData && userData.balance >= GOAL && userData.rewardShown && !userData.rewardRedeemed) {
+    document.getElementById('rewardBanner').classList.add('show');
+  }
+}
+
+// ─── Cooldown timer ───────────────────────────────────────
+function fmtTime(ms){
+  const h=Math.floor(ms/3600000),m=Math.floor((ms%3600000)/60000),s=Math.floor((ms%60000)/1000);
+  return String(h).padStart(2,'0')+':'+String(m).padStart(2,'0')+':'+String(s).padStart(2,'0');
+}
+function updateCD(){
+  if(!userData) return;
+  const rem=COOLDOWN-(Date.now()-userData.lastTap);
+  const lbl=document.getElementById('cdLabel'),tmr=document.getElementById('cdTimer');
+  const bar=document.getElementById('cdBar'),wrp=document.getElementById('cdWrap');
+  const rdy=document.getElementById('readyMsg');
+  if(userData.lastTap>0&&rem>0){
+    lbl.style.display='block';wrp.style.display='block';
+    rdy.classList.remove('show');
+    tmr.textContent=fmtTime(rem);
+    bar.style.width=Math.max(0,(rem/COOLDOWN)*100)+'%';
+  } else {
+    lbl.style.display='none';wrp.style.display='none';tmr.textContent='';
+    if(userData.taps>0) rdy.classList.add('show');
+  }
+  refreshBtn();
+}
+
+// ─── UI ───────────────────────────────────────────────────
+function updateUI(){
+  if(!userData) return;
+  const bal=userData.balance.toFixed(2);
+  document.getElementById('walletDisplay').textContent='$'+bal;
+  document.getElementById('sTotal').textContent='$'+bal;
+  document.getElementById('sTaps').textContent=userData.taps;
+  document.getElementById('sVisits').textContent=userData.visits;
+  const pct=Math.min(100,(userData.balance/GOAL)*100);
+  document.getElementById('progressFill').style.width=pct+'%';
+  document.getElementById('progressAmt').textContent='$'+bal+' / $'+GOAL.toFixed(2);
+}
+function renderHist(){
+  if(!userData) return;
+  const el=document.getElementById('histList');
+  const h=userData.history||[];
+  if(!h.length){el.innerHTML='<div class="no-history">No taps yet — you\'re all set to earn!</div>';return;}
+  el.innerHTML=h.slice(0,10).map(e=>`
+    <div class="history-item">
+      <div>
+        <div class="history-loc">${e.lat?e.lat+', '+e.lng:'Location unavailable'}<span class="geo-badge">GEO</span><span class="geo-badge">${e.dist}m</span></div>
+        <div class="history-meta">${e.date} · ${e.time} · 2422 St Clair Ave W</div>
+      </div>
+      <div class="history-amt">+$${e.amount.toFixed(2)}</div>
+    </div>`).join('');
+}
+</script>
+
+<!--
+════════════════════════════════════════════════════════════
+  📋 SETUP GUIDE — takes about 10 minutes, completely free
+════════════════════════════════════════════════════════════
+
+STEP 1 — Create a Firebase project
+  1. Go to https://console.firebase.google.com
+  2. Click "Add project" → name it (e.g. "geotap-store")
+  3. Disable Google Analytics if you don't need it → Create project
+
+STEP 2 — Enable Google Sign-In
+  1. In the left sidebar: Build → Authentication → Get started
+  2. Sign-in method tab → Google → Enable → Save
+  3. Add your hosting domain to "Authorized domains" (add localhost for testing)
+
+STEP 3 — Create Firestore database
+  1. Build → Firestore Database → Create database
+  2. Choose "Start in test mode" (you can add security rules later)
+  3. Pick a region close to Toronto (e.g. us-east1)
+
+STEP 4 — Get your Firebase config
+  1. Project Settings (gear icon) → General tab → scroll to "Your apps"
+  2. Click </> (Web) → register app → copy the firebaseConfig object
+  3. Paste the 6 values into the FIREBASE_CONFIG at the top of this file
+
+STEP 5 — Host the file
+  Option A (easiest): Netlify
+    1. Go to https://netlify.com → "Deploy manually"
+    2. Drag this HTML file → get a URL like https://yourapp.netlify.app
+    3. Add that domain to Firebase Auth → Authorized domains
+
+  Option B: Firebase Hosting (keeps everything in one place)
+    1. npm install -g firebase-tools
+    2. firebase login && firebase init hosting
+    3. Put this file in public/index.html
+    4. firebase deploy
+
+STEP 6 — Make your QR code
+  1. Go to https://qr.io or https://www.qr-code-generator.com
+  2. Paste your hosted URL
+  3. Download, print, and place it in your store!
+
+STEP 7 — Firestore security rules (recommended before going live)
+  Replace the default rules with:
+
+  rules_version = '2';
+  service cloud.firestore {
+    match /databases/{database}/documents {
+      match /users/{userId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+    }
+  }
+
+════════════════════════════════════════════════════════════
+-->
+</body>
+</html>
