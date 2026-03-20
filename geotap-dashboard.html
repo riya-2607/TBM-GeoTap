@@ -503,23 +503,26 @@ if (DEMO) {
 window.loadData = async () => {
   if (DEMO) { renderAll(); return; }
   const snap = await getDocs(collection(db, 'users'));
-  allCustomers = snap.docs.map(d => {
-    const data = d.data();
-    return {
-      uid:         d.id,
-      displayName: data.displayName || data.name || '(no name)',
-      email:       data.email       || '(no email)',
-      photoURL:    data.photoURL    || null,
-      balance:     data.balance     || 0,
-      taps:        data.taps        || 0,
-      visits:      data.visits      || 0,
-      lastTap:     data.lastTap     || 0,
-      rewardShown:    data.rewardShown    || false,
-      rewardRedeemed: data.rewardRedeemed || false,
-      history:     data.history     || [],
-      weekTaps:    data.weekTaps    || []
-    };
-  });
+  allCustomers = snap.docs
+    .map(d => {
+      const data = d.data();
+      return {
+        uid:            d.id,
+        displayName:    data.displayName || data.name || '(no name)',
+        email:          data.email       || '(no email)',
+        photoURL:       data.photoURL    || null,
+        balance:        data.balance     || 0,
+        taps:           data.taps        || 0,
+        visits:         data.visits      || 0,
+        lastTap:        data.lastTap     || 0,
+        rewardShown:    data.rewardShown    || false,
+        rewardRedeemed: data.rewardRedeemed || false,
+        history:        data.history     || [],
+        weekTaps:       data.weekTaps    || []
+      };
+    })
+    // Exclude the owner's own account from the customer list
+    .filter(c => c.email.toLowerCase() !== OWNER_EMAIL.toLowerCase());
   renderAll();
 };
 
@@ -647,7 +650,7 @@ function statusLabel(s){ return {active:'Active',pending:'Reward ready',redeemed
 
 function renderTable(containerId, customers){
   const el=document.getElementById(containerId);
-  if(!customers.length){ el.innerHTML='<div class="empty-state">No customers yet</div>'; return; }
+  if(!customers.length){ el.innerHTML='<div class="empty-state">No customers yet — share your QR code so customers can sign in and start earning!</div>'; return; }
   el.innerHTML=customers.map(c=>{
     const status=getStatus(c);
     const initials=(c.displayName||'?').split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
