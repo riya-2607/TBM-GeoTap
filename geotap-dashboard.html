@@ -21,7 +21,7 @@
     messagingSenderId: "684077488167",
     appId:             "1:684077488167:web:97185e3372bb46cbb15602"
   };
-  const OWNER_EMAIL = "YOUR_GMAIL@gmail.com"; // ← replace with your Gmail
+  const OWNER_EMAIL = "xavier26.riya@gmail.com";
 </script>
 
 <style>
@@ -503,7 +503,23 @@ if (DEMO) {
 window.loadData = async () => {
   if (DEMO) { renderAll(); return; }
   const snap = await getDocs(collection(db, 'users'));
-  allCustomers = snap.docs.map(d => ({ uid: d.id, ...d.data() }));
+  allCustomers = snap.docs.map(d => {
+    const data = d.data();
+    return {
+      uid:         d.id,
+      displayName: data.displayName || data.name || '(no name)',
+      email:       data.email       || '(no email)',
+      photoURL:    data.photoURL    || null,
+      balance:     data.balance     || 0,
+      taps:        data.taps        || 0,
+      visits:      data.visits      || 0,
+      lastTap:     data.lastTap     || 0,
+      rewardShown:    data.rewardShown    || false,
+      rewardRedeemed: data.rewardRedeemed || false,
+      history:     data.history     || [],
+      weekTaps:    data.weekTaps    || []
+    };
+  });
   renderAll();
 };
 
@@ -728,14 +744,31 @@ window.closeModal=()=>{ document.getElementById('modalOverlay').classList.remove
 
 async function confirmRedeem(){
   if(!pendingRedeemId) return;
-  const cust=allCustomers.find(c=>c.uid===pendingRedeemId);
-  if(cust){
-    cust.rewardRedeemed=true;
-    cust.balance=0;
-    cust.rewardShown=false;
-    if(!DEMO&&db){
-      const ref=doc(db,'users',pendingRedeemId);
-      await updateDoc(ref,{rewardRedeemed:true,balance:0,rewardShown:false,redeemedAt:new Date().toISOString()});
+  const btn = document.getElementById('modalConfirmBtn');
+  btn.disabled = true;
+  btn.textContent = 'Saving…';
+
+  const cust = allCustomers.find(c => c.uid === pendingRedeemId);
+  if (cust) {
+    cust.rewardRedeemed = true;
+    cust.balance        = 0;
+    cust.rewardShown    = false;
+    if (!DEMO && db) {
+      try {
+        const ref = doc(db, 'users', pendingRedeemId);
+        await updateDoc(ref, {
+          rewardRedeemed: true,
+          balance:        0,
+          rewardShown:    false,
+          redeemedAt:     new Date().toISOString()
+        });
+      } catch(e) {
+        btn.disabled = false;
+        btn.textContent = 'Confirm';
+        document.getElementById('modalBody').innerHTML +=
+          `<br><span style="color:var(--danger);font-size:12px;">Save failed: ${e.message}</span>`;
+        return;
+      }
     }
   }
   closeModal();

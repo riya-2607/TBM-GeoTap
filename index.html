@@ -419,10 +419,27 @@ window.signOut = async () => {
 async function loadUserData() {
   const ref  = doc(db, 'users', currentUser.uid);
   const snap = await getDoc(ref);
+
+  // Always write latest profile info from Google Auth so dashboard can see names
+  const profile = {
+    displayName: currentUser.displayName || '',
+    email:       currentUser.email       || '',
+    photoURL:    currentUser.photoURL    || '',
+    updatedAt:   serverTimestamp()
+  };
+
   if (snap.exists()) {
     userData = snap.data();
+    // Update profile fields in case they changed
+    await updateDoc(ref, profile);
+    Object.assign(userData, profile);
   } else {
-    userData = { balance:0, taps:0, visits:0, lastTap:0, rewardShown:false, rewardRedeemed:false, history:[] };
+    // Brand new user — create full record
+    userData = {
+      balance: 0, taps: 0, visits: 0, lastTap: 0,
+      rewardShown: false, rewardRedeemed: false, history: [],
+      ...profile
+    };
     await setDoc(ref, userData);
   }
 }
@@ -520,21 +537,78 @@ function refreshBtn() {
 }
 
 // ─── Location ─────────────────────────────────────────────
-// ─── Location ─────────────────────────────────────────────
 window.startLoc = function() {
   if (!navigator.geolocation) {
-    onErr();
+    showLocError('Your browser does not support location. Try Chrome or Safari.');
     return;
   }
-  // Reset UI to "locating" state before trying again
-  document.getElementById('locDot').className   = 'loc-dot';
+
+  // Check permission state if API is available
+  if (navigator.permissions) {
+    navigator.permissions.query({ name: 'geolocation' }).then(result => {
+      if (result.state === 'denied') {
+        // Already hard-blocked — can't show popup, must guide to settings
+        showLocBlocked();
+      } else {
+        // 'granted' or 'prompt' — request will either auto-succeed or show popup
+        requestPosition();
+      }
+      // Listen for changes (user flips it in settings)
+      result.onchange = () => {
+        if (result.state === 'granted') window.startLoc();
+        else if (result.state === 'denied') showLocBlocked();
+      };
+    });
+  } else {
+    // permissions API not available — just try and handle error
+    requestPosition();
+  }
+};
+
+function requestPosition() {
+  document.getElementById('locDot').className    = 'loc-dot';
   document.getElementById('locText').textContent = 'Locating…';
   document.getElementById('fenceBanner').className = 'fence-banner checking';
   document.getElementById('fenceIcon').textContent  = '⏳';
   document.getElementById('fenceTitle').textContent = 'Checking your location…';
   document.getElementById('fenceSub').textContent   = 'Verifying you\'re inside the store';
-  navigator.geolocation.getCurrentPosition(onPos, onErr, {enableHighAccuracy:true, timeout:10000});
-  navigator.geolocation.watchPosition(onPos, onErr, {enableHighAccuracy:true});
+  navigator.geolocation.getCurrentPosition(onPos, onGeoErr, { enableHighAccuracy: true, timeout: 10000 });
+  navigator.geolocation.watchPosition(onPos, onGeoErr, { enableHighAccuracy: true });
+}
+
+function onGeoErr(err) {
+  if (err.code === 1) {
+    // PERMISSION_DENIED
+    showLocBlocked();
+  } else if (err.code === 2) {
+    showLocError('Location unavailable. Check your device GPS is on and try again.');
+  } else {
+    showLocError('Location timed out. Make sure GPS is enabled and try again.');
+  }
+}
+
+function showLocBlocked() {
+  document.getElementById('locDot').className    = 'loc-dot error';
+  document.getElementById('locText').textContent = 'Location blocked';
+  document.getElementById('fenceBanner').className = 'fence-banner denied';
+  document.getElementById('fenceIcon').textContent  = '!';
+  document.getElementById('fenceTitle').textContent = 'Location is blocked';
+  document.getElementById('fenceSub').innerHTML = `
+    To earn rewards, allow location access:<br>
+    <strong>iPhone:</strong> Settings → Safari → Location → Allow<br>
+    <strong>Android:</strong> Tap the 🔒 lock icon in your browser address bar → Permissions → Location → Allow<br>
+    <button class='btn-enable' style='margin-top:8px;' onclick='window.startLoc()'>I've allowed it — try again</button>`;
+  document.getElementById('tapBtn').disabled = true;
+}
+
+function showLocError(msg) {
+  document.getElementById('locDot').className    = 'loc-dot error';
+  document.getElementById('locText').textContent = 'Location error';
+  document.getElementById('fenceBanner').className = 'fence-banner denied';
+  document.getElementById('fenceIcon').textContent  = '!';
+  document.getElementById('fenceTitle').textContent = 'Location error';
+  document.getElementById('fenceSub').innerHTML = msg + `<br><button class='btn-enable' style='margin-top:8px;' onclick='window.startLoc()'>Try again</button>`;
+  document.getElementById('tapBtn').disabled = true;
 }
 
 function onPos(pos) {
@@ -554,16 +628,6 @@ function onPos(pos) {
   dot.style.top =(50+Math.max(-45,Math.min(45,dy)))+'%';
   setFence(dist);
 }
-function onErr() {
-  document.getElementById('locDot').className   = 'loc-dot error';
-  document.getElementById('locText').textContent = 'Location denied';
-  document.getElementById('fenceBanner').className = 'fence-banner denied';
-  document.getElementById('fenceIcon').textContent  = '!';
-  document.getElementById('fenceTitle').textContent = 'Location access required';
-  document.getElementById('fenceSub').innerHTML     = "Allow location to verify you're in-store.<br><button class='btn-enable' onclick='startLoc()'>Enable Location</button>";
-  document.getElementById('tapBtn').disabled = true;
-}
-
 // ─── Tap ──────────────────────────────────────────────────
 window.handleTap = async () => {
   if (!inside) {
